@@ -11,12 +11,11 @@
         android:layout_height="match_parent">
 
         <Button
-            android:id="@+id/button"
+            android:id="@+id/save_btn"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
             android:background="@color/colorPrimary"
-            android:onClick="save"
             android:text="@string/savee"
             android:textColor="#FFFFFF"
             tools:ignore="MissingConstraints" />

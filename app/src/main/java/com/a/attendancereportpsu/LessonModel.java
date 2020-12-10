@@ -8,8 +8,8 @@ public class LessonModel {
     // public String department;
     public String id;
 
-    public LessonModel(String id, String subject, String lecturer, String date, String time) {
-        this.id = id;
+    public LessonModel(String group_id, String subject, String lecturer, String date, String time) {
+        this.id = group_id;
         this.subject_name = subject;
         this.lecturer_name = lecturer;
         this.date= date;

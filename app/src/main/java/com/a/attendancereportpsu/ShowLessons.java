@@ -3,6 +3,8 @@ package com.a.attendancereportpsu;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
@@ -25,13 +27,20 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 
 import static android.text.format.DateUtils.*;
 
@@ -40,20 +49,34 @@ public class ShowLessons extends AppCompatActivity {
     Button date;                    //отображение и выбор даты
     Calendar dateAndTime = Calendar.getInstance();//получить текущие дату и время
     FirebaseFirestore mFirebaseDatabase;
+    DatabaseReference mDatabaseReference;
+    FirebaseDatabase firebaseData;
     String uId;
     String groupId;
     DocumentReference docRef;
     StudentModel headmen;
+    private ArrayList<LessonModel> list_lessons = new ArrayList<>();
+    LessonAdapter lessonAdapter;
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         initFirebase();
         setContentView(R.layout.activity_show_lessons);
         date = (Button) findViewById(R.id.date);
-        getGroupNumber();
+        groupId=getGroupNumber();
+        list_lessons.add(new LessonModel(groupId,"Тестирование ПО", "Крышень Михаил Александрович", "17 декабря 2020 Г.","12:00"));
+        list_lessons.add(new LessonModel(groupId,"Автоматизация управления предприятием", "Сошкин Роман Владимирович", "17 декабря 2020 Г.","13:40"));
+        list_lessons.add(new LessonModel(groupId,"Философия", "Суворова Ирина Михайловна", "17 декабря 2020 Г.","17:45"));
         setInitialDate();
+        lessonAdapter = new LessonAdapter();
+        initRecyclerView();
     }
-
+    public void initRecyclerView(){
+        lessonAdapter.setItems(list_lessons);
+        RecyclerView listOfLessons = findViewById(R.id.lessonRecycler);//привязка из лэйаут
+        listOfLessons.setLayoutManager(new LinearLayoutManager(this));//менедже
+        listOfLessons.setAdapter(lessonAdapter);
+    }
 
 
     DatePickerDialog.OnDateSetListener d = new DatePickerDialog.OnDateSetListener() {
@@ -134,6 +157,7 @@ public class ShowLessons extends AppCompatActivity {
                 exit();
                 return true;
             case R.id.action_report://если выбрано "Создать отчет"
+                Log.d("TAG", groupId);
                 return true;
 
         }
@@ -155,12 +179,13 @@ public class ShowLessons extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
     }
 
-    private void initFirebase() {
-        // (google-services.json - файл, с настройками для firebase, кот. мы получили во время регистрации)
+    public void initFirebase() {
+        //инициализируем наше приложение для Firebase согласно параметрам в google-services.json
         FirebaseApp.initializeApp(this);
         //получаем точку входа для базы данных
+        firebaseData = FirebaseDatabase.getInstance();
+        mDatabaseReference = firebaseData.getReference();
         mFirebaseDatabase = FirebaseFirestore.getInstance();
-
     }
 
     public String getGroupNumber() {
@@ -173,7 +198,8 @@ public class ShowLessons extends AppCompatActivity {
             Log.d("User Id", uId);
            // headmen = new StudentModel("123", "student");
             // mFirebaseDatabase.collection("headmen").document(uId).set(headmen);
-            DocumentReference docRef = mFirebaseDatabase.collection("headmen").document(uId);
+
+           DocumentReference docRef = mFirebaseDatabase.collection("headmen").document(uId);
             docRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
                 @Override
                 public void onComplete(@NonNull Task<DocumentSnapshot> task) {
@@ -194,6 +220,7 @@ public class ShowLessons extends AppCompatActivity {
                     }
                 }
             });
+
             return groupId;
         }
         else return "";

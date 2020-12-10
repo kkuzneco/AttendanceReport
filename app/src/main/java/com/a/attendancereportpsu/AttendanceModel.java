@@ -1,6 +1,8 @@
 package com.a.attendancereportpsu;
 
-public class AttendanceModel {
+import java.io.Serializable;
+
+public class AttendanceModel implements Serializable {
     public String student_id;
     public Boolean status;
 

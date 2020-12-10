@@ -32,6 +32,15 @@
                 android:layout_height="wrap_content"
                 android:layout_below="@id/subject_name" />
 
+            <ImageButton
+                android:id="@+id/change_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="false"
+                android:layout_alignParentRight="true"
+                android:backgroundTint="#00FFFFFF"
+                card_view:srcCompat="@android:drawable/ic_menu_edit" />
+
         </RelativeLayout>
     </androidx.cardview.widget.CardView>
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -37,7 +37,7 @@ public class Lecturer extends AppCompatActivity {
 
         initFirebase();
         lecturerList = new ArrayList<String>();
-        saveLecturer = (Button)findViewById(R.id.button);
+        saveLecturer = (Button)findViewById(R.id.save_btn);
         lecturerListView = (ListView)findViewById(R.id.lecturerListView);
         lecturerListView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
         Intent intent_1 = getIntent();

@@ -24,11 +24,12 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
-public class LessonAdd extends AppCompatActivity {
+public class LessonAdd extends AppCompatActivity{
     AlertDialog.Builder builder;    //для диалога отмены
     Calendar dateAndTime = Calendar.getInstance();//получаем календарь
     Button setdateTime, setSubject, setLecturer, setStudents;//buttons
@@ -201,14 +202,14 @@ public class LessonAdd extends AppCompatActivity {
         }
         if (requestCode == 3) {
             assert data != null;
-            Bundle bundle = data.getExtras();
-            attendance = (ArrayList<AttendanceModel>) bundle.getSerializable("selects");//здесь данные о посещаемости
-            Log.d("selectItemEXIT", String.valueOf(attendance.get(0).student_id));
-            Log.d("selectItemEXIT", String.valueOf(attendance.get(0).status));
-            Log.d("selectItemEXIT", String.valueOf(attendance.get(1).student_id));
-            Log.d("selectItemEXIT", String.valueOf(attendance.get(1).status));
-            Log.d("selectItemEXIT", String.valueOf(attendance.get(2).student_id));
-            Log.d("selectItemEXIT", String.valueOf(attendance.get(2).status));
+          //  Bundle bundle = data.getExtras();
+        //    attendance = (ArrayList<AttendanceModel>) bundle.getSerializable("selects");//здесь данные о посещаемости
+          //  Log.d("selectItemEXIT", String.valueOf(attendance.get(0).student_id));
+          //  Log.d("selectItemEXIT", String.valueOf(attendance.get(0).status));
+          //  Log.d("selectItemEXIT", String.valueOf(attendance.get(1).student_id));
+          //  Log.d("selectItemEXIT", String.valueOf(attendance.get(1).status));
+          //  Log.d("selectItemEXIT", String.valueOf(attendance.get(2).student_id));
+          //  Log.d("selectItemEXIT", String.valueOf(attendance.get(2).status));
         }
     }
 }

@@ -39,6 +39,7 @@ public class MainActivity extends BaseActivity implements
     DatabaseReference mDatabaseReference;
     DatabaseReference children;
     FirebaseFirestore mFirebaseDatabase;
+    FirebaseDatabase firebaseData;
     CollectionReference headmen;
 
     /*
@@ -105,6 +106,8 @@ public String getUID(){
         //инициализируем наше приложение для Firebase согласно параметрам в google-services.json
         FirebaseApp.initializeApp(this);
         //получаем точку входа для базы данных
+        firebaseData = FirebaseDatabase.getInstance();
+        mDatabaseReference = firebaseData.getReference();
         mFirebaseDatabase = FirebaseFirestore.getInstance();
        }
     /*

@@ -8,10 +8,12 @@ import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 import static com.a.attendancereportpsu.R.layout.cardview;
+
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public class StudentAdapter extends RecyclerView.Adapter<StudentAdapter.StudentViewHolder> {
+public class StudentAdapter extends RecyclerView.Adapter<StudentAdapter.StudentViewHolder>{
 
     private List<StudentModel> listOfStudents = new ArrayList<>();
     public ArrayList<AttendanceModel> attendance = new ArrayList<>();
@@ -58,6 +60,7 @@ public class StudentAdapter extends RecyclerView.Adapter<StudentAdapter.StudentV
         CardView cv;
         TextView Name;
 
+
         public void bind(StudentModel student) {
             Name.setText(student.name);
         }
@@ -67,7 +70,7 @@ public class StudentAdapter extends RecyclerView.Adapter<StudentAdapter.StudentV
         public StudentViewHolder(@NonNull View itemView) {
             super(itemView);
              cv = (CardView) itemView.findViewById(R.id.cv);
-            Name = (TextView) itemView.findViewById(R.id.student_name);
+            Name = (TextView) itemView.findViewById(R.id.subject_name);
             cv.setOnClickListener(this);
         }
 
