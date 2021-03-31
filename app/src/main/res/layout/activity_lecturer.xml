@@ -10,12 +10,11 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <ListView
-            android:id="@+id/lecturerListView"
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/lecturerRecycleView"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-        </ListView>
+            android:layout_height="match_parent"
+            android:layout_above="@id/save_btn" />
 
         <Button
             android:id="@+id/save_btn"
@@ -26,5 +25,7 @@
             android:onClick="save"
             android:text="Сохранить"
             android:textColor="#FFFFFF" />
+
     </RelativeLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

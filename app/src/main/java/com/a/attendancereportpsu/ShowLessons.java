@@ -11,7 +11,6 @@ import android.app.DatePickerDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -21,26 +20,18 @@ import android.widget.DatePicker;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
-import com.google.firebase.firestore.QueryDocumentSnapshot;
-import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.List;
 
 import static android.text.format.DateUtils.*;
 
@@ -52,11 +43,13 @@ public class ShowLessons extends AppCompatActivity {
     DatabaseReference mDatabaseReference;
     FirebaseDatabase firebaseData;
     String uId;
-    String groupId;
+    String groupId = "123";
     DocumentReference docRef;
     StudentModel headmen;
     private ArrayList<LessonModel> list_lessons = new ArrayList<>();
+    StudentModel student;
     LessonAdapter lessonAdapter;
+    DatabaseHelper dbHelper;
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -64,9 +57,11 @@ public class ShowLessons extends AppCompatActivity {
         setContentView(R.layout.activity_show_lessons);
         date = (Button) findViewById(R.id.date);
         groupId=getGroupNumber();
-        list_lessons.add(new LessonModel(groupId,"Тестирование ПО", "Крышень Михаил Александрович", "17 декабря 2020 Г.","12:00"));
-        list_lessons.add(new LessonModel(groupId,"Автоматизация управления предприятием", "Сошкин Роман Владимирович", "17 декабря 2020 Г.","13:40"));
-        list_lessons.add(new LessonModel(groupId,"Философия", "Суворова Ирина Михайловна", "17 декабря 2020 Г.","17:45"));
+        dbHelper = new DatabaseHelper(this);
+        //dbHelper.onCreate(db);
+        //создаем модель студента. Далее используется для заполения БД
+        student = new StudentModel("","","");
+
         setInitialDate();
         lessonAdapter = new LessonAdapter();
         initRecyclerView();
@@ -123,6 +118,7 @@ public class ShowLessons extends AppCompatActivity {
                 FORMAT_SHOW_DATE | FORMAT_SHOW_YEAR));
          }
 
+
     /*
     Выбрать дату
      */
@@ -133,15 +129,12 @@ public class ShowLessons extends AppCompatActivity {
                 dateAndTime.get(Calendar.DAY_OF_MONTH))
                 .show();
     }
-    public String getUID(){
-        return FirebaseAuth.getInstance().getUid();
-    }
-    public String getGid(){
-        return groupId;
-    }
+  /*
+            Создание меню
+   */
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_main, menu);
+    public boolean onCreateOptionsMenu(Menu menu2) {
+        getMenuInflater().inflate(R.menu.menu_main, menu2);
         return true;
     }
 
@@ -153,7 +146,7 @@ public class ShowLessons extends AppCompatActivity {
         int id = item.getItemId();
 
         switch(id){
-            case R.id.action_exit ://если выбрано "Выход"
+            case R.id.action_exit://если выбрано "Выход"
                 exit();
                 return true;
             case R.id.action_report://если выбрано "Создать отчет"
@@ -177,6 +170,8 @@ public class ShowLessons extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        Toast.makeText(ShowLessons.this, "Занятие создано!",
+                Toast.LENGTH_SHORT).show();
     }
 
     public void initFirebase() {
@@ -216,14 +211,14 @@ public class ShowLessons extends AppCompatActivity {
                         }
                     } else {
                         Log.d("TAG", "get failed with ", task.getException());
-                      groupId ="";
+                      groupId =null;
                     }
                 }
             });
 
             return groupId;
         }
-        else return "";
+        else return null;
     }
 
 }

@@ -1,5 +1,6 @@
 package com.a.attendancereportpsu;
 import android.graphics.Color;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,15 +16,29 @@ import java.util.List;
 
 public class StudentAdapter extends RecyclerView.Adapter<StudentAdapter.StudentViewHolder>{
 
-    private List<StudentModel> listOfStudents = new ArrayList<>();
+    public List<StudentModel> listOfStudents = new ArrayList<>();
     public ArrayList<AttendanceModel> attendance = new ArrayList<>();
     int pos = 0;
 
-    public void setItems(ArrayList<StudentModel> students) {
-        listOfStudents.addAll(students);
+    public void setItems() {
+      //  listOfStudents.addAll(students);
         for (int i =0; i<listOfStudents.size();i++)
-            attendance.add(new AttendanceModel(listOfStudents.get(i).getId(), false));
-        notifyDataSetChanged();
+            attendance.add(new AttendanceModel(listOfStudents.get(i).id, false));
+        //notifyDataSetChanged();
+    }
+    public void check_items(ArrayList<AttendanceModel> m){
+        for (int i = 0; i<m.size();i++){
+            for (int j =0; j<attendance.size();j++){
+                if (m.get(i).student_id.equals(attendance.get(j).student_id)) {
+                    this.attendance.get(j).setStatus(m.get(i).status);
+                    Log.d("selectItemEXIT", String.valueOf(m.get(i).status));
+                    Log.d("selectItemEXIT", String.valueOf(this.attendance.get(j).status));
+                }
+            }
+            Log.d("selectItem", String.valueOf(attendance.get(0).student_id));
+            Log.d("selectItem", String.valueOf(attendance.get(0).status));
+        }
+
     }
 
     public void clearItems() {
@@ -42,7 +57,18 @@ public class StudentAdapter extends RecyclerView.Adapter<StudentAdapter.StudentV
     @Override
     public void onBindViewHolder(StudentAdapter.StudentViewHolder holder, int position) {
          //holder.cv.setSelected(selectedItems.get(position, false));
+        holder.cv.setSelected(attendance.get(position).status);
         holder.bind(listOfStudents.get(position));
+        Log.d("mLog",String.valueOf(attendance.get(position).status));
+        if(!holder.cv.isSelected()){
+            // Log.d("selectItem", "remove selection");
+            holder.cv.setCardBackgroundColor(Color.WHITE);
+            holder.cv.setSelected(false);
+        }
+        else{
+            holder.cv.setCardBackgroundColor(Color.parseColor("#cef2cb"));
+            holder.cv.setSelected(true);
+        }
     }
 
     @Override
@@ -69,7 +95,7 @@ public class StudentAdapter extends RecyclerView.Adapter<StudentAdapter.StudentV
 
         public StudentViewHolder(@NonNull View itemView) {
             super(itemView);
-             cv = (CardView) itemView.findViewById(R.id.cv);
+            cv = (CardView) itemView.findViewById(R.id.cv);
             Name = (TextView) itemView.findViewById(R.id.subject_name);
             cv.setOnClickListener(this);
         }
@@ -77,7 +103,7 @@ public class StudentAdapter extends RecyclerView.Adapter<StudentAdapter.StudentV
         @Override
         public void onClick(View view) {
             int positionIndex = getAdapterPosition();
-          if(attendance.get(positionIndex).status)
+           if(attendance.get(positionIndex).status)
               attendance.get(positionIndex).status= false ;
             else attendance.get(positionIndex).status=true;
           //  Log.d("selectItem", String.valueOf(selects[positionIndex]));

@@ -2,14 +2,18 @@ package com.a.attendancereportpsu;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.ListView;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
@@ -22,97 +26,122 @@ import java.util.ArrayList;
 
 public class Subject extends AppCompatActivity {
 
-    ListView subjectListView;
-    ArrayList<String> subjectList;
-    ArrayList<String> subjects;
-    int position = 0;
-    int index = 0;
+    RecyclerView subjectListView;
+    ArrayList<SubjectModel> subjects;
     FirebaseFirestore mFirebaseDatabase;
-    String groupNumber;
-    SubjectModel[] subjectList1 = new SubjectModel[9];
-    //Collection<SubjectModel> collection =new ArrayList<>();
-
-    // RecyclerView listOfSubject;
-    //SubjectAdapter subAdapter;
-    Button saveAttendance;
-
+    String groupNumber, institute;
+    DatabaseHelper dbHelper;
+    SQLiteDatabase db;
+    String subject = null;
+    int index;
+    Button saveSubj;
+    SubjectModel subModel;
+    SubjectAdapter subjectAdapter;
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_subject);
         initFirebase();
-        subjectList = new ArrayList<String>();
-        saveAttendance = (Button)findViewById(R.id.save_btn);
-        subjectListView = (ListView)findViewById(R.id.subjectListView);
-        subjectListView.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+        subModel = new SubjectModel("","","", "","");
+        dbHelper=new DatabaseHelper(this);
+        db = dbHelper.getWritableDatabase();
+        subjects = new ArrayList<SubjectModel>();
+        subjectAdapter = new SubjectAdapter();
+        //subjectAdapter.clearItems();
+        subject="";
+        saveSubj = (Button)findViewById(R.id.save_btn);
+        subjectListView = (RecyclerView) findViewById(R.id.subjectRecycleView);
         Intent intent_1 = getIntent();
+        institute = intent_1.getStringExtra("institute");
         groupNumber = intent_1.getStringExtra("groupId");
-
+        if(intent_1.getStringExtra("subject")!=null)
+            subject = intent_1.getStringExtra("subject");
         Log.d("GROUP IN SUB",groupNumber);
-        subjectList.add("subject");
-      // newF();
-        prepare();
+        formList();
+        initRecyclerView();
+        if((!subject.equals(""))&&(subjectAdapter.listOfSubjects.size()>0)){
+            Log.d("subjectID",subject);
+            Cursor cursor = db.query("subjects", null, "id = ?", new String[]{subject}, null, null,null);
+            int nameIndex = cursor.getColumnIndex("name");
+            int typeIndex = cursor.getColumnIndex("type");
+            int i=0;
+            index = -1;
+            cursor.moveToFirst();
+            for(i=0; i<subjectAdapter.listOfSubjects.size(); i++){
+                if(subjectAdapter.listOfSubjects.get(i).type.equals(cursor.getString(typeIndex)) && subjectAdapter.listOfSubjects.get(i).name.equals(cursor.getString(nameIndex)))
+                    index = i;
+            }
+            if(index!=-1)
+                 subjectAdapter.chosen = index;
+
+        }
 
 
-
-      //  Log.d("ARRAY", subjectList.get(2).toString());
-       /* ArrayAdapter<Object> adapter = new ArrayAdapter<Object>(this,
-                android.R.layout.simple_list_item_checked, subjectList);
-        subjectListView.setAdapter(adapter);
-        subjectListView.setVisibility(View.VISIBLE);*/
-        //    loadSubjects();
-    }
-    private void prepare(){
-       subjects= getSubjectList(groupNumber);
-   //    Log.d("ff", subjects.get(3));
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
-                android.R.layout.simple_list_item_single_choice, subjects);
-        subjectListView.setAdapter(adapter);
-    }
-    public ArrayList<String> getSubjectList(String groupNumber){
-     //   subjectList = new ArrayList<String>();
-        subjectList.add("testSubject");
-        Task<QuerySnapshot> querySnapshotTask = mFirebaseDatabase.collection("subjects").whereEqualTo("group_id", groupNumber).get()
-                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-
-                    @Override
-                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                        if (task.isSuccessful()) {
-
-                            for (QueryDocumentSnapshot document : task.getResult()) {
-                                if (document.exists()) {
-                                 prepareSubjectList(document.get("name").toString());
-//                                 SubjectModel sm=document.toObject(SubjectModel.class);
-                                   // subjectList.add(document.get("name").toString());
-                                   // for (int i = 0; i <= subjectList.size() - 1; i++)
-                                    //    Log.d("element", subjectList.get(i));
-                                    //Log.d("jop", document.getId() + " => " + document.getData());
-                                    //index += 1;
-                                }
-                            }
-                            Log.d("element", String.valueOf(subjectList.size()));
-                        } else {
-                            Log.d("TAG", "Error getting documents: ", task.getException());
-                        }
-
-                    }
-
-
-                });
-        return subjectList;
+        loadSubject();
 
     }
+    public void initRecyclerView(){
+        Log.d("mlog", "initRecyclerView");
+        //RecyclerView listOfStudents = findViewById(R.id.subjectRecycleView);//привязка из лэйаут
+        subjectListView.setLayoutManager(new LinearLayoutManager(this));//менедже
+        subjectListView.setAdapter(subjectAdapter);
+    }
+    public void formList(){
 
-    public void prepareSubjectList(String subj)
-    {
-        String s = new String();
-        s = subj;
-        subjectList.add(s);
-        subjectList1[index] = new SubjectModel("22407", subj);
-        Log.d("size", String.valueOf(subjectList.size()));
+      //  Log.d("mlog", institute);
+        db = dbHelper.getWritableDatabase();
+        Cursor cursor;
+        if(institute!=null){
+            Log.d("institute1", institute);
 
+            cursor = db.query("subjects", null, "institute = ?", new String[]{institute}, null, null, null);
+        }
+        else
+           cursor = db.query("subjects", null, null, null, null, null, null);
+        if (cursor.moveToFirst()) {
+            int idIndex = cursor.getColumnIndex("id");
+            int nameIndex = cursor.getColumnIndex("name");
+            int groupIndex = cursor.getColumnIndex("group_id");
+            int instituteIndex = cursor.getColumnIndex("institute");
+            int typeIndex = cursor.getColumnIndex("type");
+            do {
+
+                Log.d("mLog", "ID = " + cursor.getString(idIndex) +
+                        ", name = " + cursor.getString(nameIndex) +
+                        ", institute = " + cursor.getString(instituteIndex));
+                subModel = new SubjectModel(cursor.getString(idIndex),cursor.getString(groupIndex),cursor.getString(nameIndex),cursor.getString(instituteIndex), cursor.getString(typeIndex));
+                subjectAdapter.listOfSubjects.add(subModel);
+                // lecturerList.add(cursor.getString(nameIndex) + "\n("+cursor.getString(instituteIndex)+")");
+            } while (cursor.moveToNext());
+        } else
+            Log.d("mLog","0 rows");
+        cursor.close();
 
     }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu, menu);
+        return true;
+    }
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        int id = item.getItemId();
+
+        switch (id) {
+            case R.id.action_update://если выбрано "Обновить список"
+                subjectAdapter.clearItems();
+                //subjectAdapter.listOfLecturers.clear();
+                formList();
+                subjectAdapter.setItems();
+                return true;
+            case R.id.action_uFb://если выбрано "Обновиться из облака"
+                loadSubject();
+                return true;
+        }
+        return false;
+    }
+
 
     public void initFirebase() {
         //инициализируем наше приложение для Firebase согласно параметрам в google-services.json
@@ -124,12 +153,57 @@ public class Subject extends AppCompatActivity {
         //  mDatabaseReference = mFirebaseDatabase.getReference();
 
     }
+    public void loadSubject() {
+        Log.d("mlog", "loadSubjects");
+
+        db = dbHelper.getWritableDatabase();
+        dbHelper.removeSubjectRows(db);
+       // lecturer = new LecturerModel("","","");
+        mFirebaseDatabase.collection("subjects").whereEqualTo("group_id", groupNumber).get()
+                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        if (task.isSuccessful()) {
+                            for (QueryDocumentSnapshot document : task.getResult()) {
+                                if (document.exists()) {
+                                    subModel.groupId = groupNumber;
+                                    subModel.institute = document.get("institute").toString();
+                                    subModel.name = document.get("name").toString();
+                                    subModel.id = document.getId().toString();
+                                    subModel.type = document.get("type").toString();
+                                    db.execSQL("insert into subjects(id, name, group_id, institute, type) values (" + "'"+subModel.id+"', "+"'"+subModel.name+"', "+"'"+subModel.groupId +"',"+"'"+subModel.institute+"',"+"'"+subModel.type+"');");
+                                    //Log.d("mlog", "insert into students(id, name, group_id) values (" + "'"+student.id+"',"+"'"+student.name+"',"+"'"+student.group_id+"');");
+                                }
+                            }
+//                            Log.d("element", String.valueOf(studentsList.size()));
+                        } else {
+                            Log.d("TAG", "Error getting documents: ", task.getException());
+                        }
+
+                    }
+
+                });
+
+
+    }
 
     public void Save(View v){
         Intent intent = new Intent(Subject.this, LessonAdd.class);
-        String subjectName = "Тестирование ПО";
-        intent.putExtra("name", subjectName);
+        Bundle bundle = new Bundle();
+        if(subjectAdapter.chosen >= 0) {
+            subModel = subjectAdapter.listOfSubjects.get(subjectAdapter.chosen);
+            bundle.putString("subject_id", subModel.id);
+
+           // bundle.putString("institute", subModel.institute);
+        }
+        else{
+          //  bundle.putString("institute", subModel.institute);
+            bundle.putString("subject_id", null);
+        }
+        intent.putExtras(bundle);
         setResult(RESULT_OK,intent);
+        finishActivity(1);
         finish();
     }
 }

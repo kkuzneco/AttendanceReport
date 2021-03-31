@@ -66,7 +66,7 @@ class LessonViewHolder extends RecyclerView.ViewHolder implements View.OnClickLi
 
 
     public void bind(LessonModel lesson) {
-        Name.setText(lesson.subject_name);
+        Name.setText(lesson.subject_id);
         time.setText(lesson.time);
     }
     // Мы также создали конструктор, который принимает на вход View-компонент строкИ

@@ -67,7 +67,7 @@
             android:layout_marginRight="15dp"
             android:background="@color/colorPrimary"
             android:text="войти"
-            android:textColor="#FFFFFF" />
+            android:textColor="#99A6AE" />
 
     </LinearLayout>
 

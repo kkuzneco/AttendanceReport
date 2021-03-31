@@ -2,7 +2,9 @@ package com.a.attendancereportpsu;
 
 import android.app.Activity;
 import android.app.Application;
+import android.app.Instrumentation;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 
@@ -30,7 +32,9 @@ import static androidx.test.espresso.action.ViewActions.click;
 import static androidx.test.espresso.action.ViewActions.closeSoftKeyboard;
 import static androidx.test.espresso.action.ViewActions.replaceText;
 import static androidx.test.espresso.intent.Intents.intended;
+import static androidx.test.espresso.intent.Intents.intending;
 import static androidx.test.espresso.intent.matcher.IntentMatchers.hasComponent;
+import static androidx.test.espresso.intent.matcher.IntentMatchers.toPackage;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static org.junit.Assert.*;
@@ -83,7 +87,7 @@ public class UIMainTest {
         assertEquals(false,activityActivityTestRule.getActivity().validateForm());
 
     }
-   /* @Test
+    @Test
     public void validFormTest() throws InterruptedException {
         onView(withId(R.id.fieldEmail)).perform(replaceText("tester@test.ru"));
         onView(withId(R.id.fieldEmail)).perform(closeSoftKeyboard());
@@ -94,7 +98,7 @@ public class UIMainTest {
         Activity cur = getCurrentActivity();
       //onView(getCurrentActivity().withId(R.id.button2)).perform((click()));
 
-    }*/
+    }
     private Activity getCurrentActivity() {
         return currentActivity[0];
     }
@@ -146,7 +150,21 @@ public class UIMainTest {
         //Log.d("TAG", activityActivityTestRule.getActivity().getUID());
         assertEquals(true,activityActivityTestRule.getActivity().validateForm());
     }
-
+    @Test
+    public void intentCheck()  {
+        Intent resultData = new Intent();
+        String groupNumber = "22000";
+        resultData.putExtra("group", groupNumber);
+        Instrumentation.ActivityResult result = new Instrumentation.ActivityResult(Activity.RESULT_OK, resultData);
+        intending(toPackage("com.a.attendancereportpsu")).respondWith(result);
+        //activityActivityTestRule.getActivity().signIn("tester@test.ru", "123", true);
+        onView(withId(R.id.fieldEmail)).perform(replaceText("tester@test.ru"));
+        onView(withId(R.id.fieldEmail)).perform(closeSoftKeyboard());
+        onView(withId(R.id.fieldPassword)).perform(replaceText("123"));
+        onView(withId(R.id.fieldPassword)).perform(closeSoftKeyboard());
+        //Log.d("TAG", activityActivityTestRule.getActivity().getUID());
+        assertEquals(true,activityActivityTestRule.getActivity().validateForm());
+    }
     @After
     public void tearDown() throws Exception {
         Intents.release();

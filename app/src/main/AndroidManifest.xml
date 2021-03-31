@@ -9,7 +9,11 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".Students"></activity>
+        <activity android:name=".ChooseDevice"></activity>
+        <activity android:name=".ChooseStudent" />
+        <activity android:name=".RegistrationOfDevice" />
+        <activity android:name=".BluetoothRegister" />
+        <activity android:name=".Students" />
         <activity android:name=".Lecturer" />
         <activity android:name=".Subject" />
         <activity android:name=".LessonAdd" />
@@ -25,5 +29,11 @@
             </intent-filter>
         </activity>
     </application>
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
 </manifest>

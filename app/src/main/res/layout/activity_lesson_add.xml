@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#FFFFFF"
     tools:context=".LessonAdd">
 
     <LinearLayout
@@ -26,19 +27,35 @@
                 android:layout_marginLeft="15dp"
                 android:layout_marginRight="15dp"
                 android:layout_marginBottom="20dp"
-                android:background="#00FFFFFF"
+                android:background="#FFFFFFFF"
                 android:onClick="setDate"
-                android:text="Button" />
+                android:text="Button"
+                android:textColor="#000000"
+                android:textSize="15sp" />
 
             <Button
-                android:id="@+id/setSubject"
+                android:id="@+id/setTime"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_below="@id/dateEdit"
                 android:layout_marginLeft="15dp"
                 android:layout_marginRight="15dp"
                 android:layout_marginBottom="20dp"
-                android:background="#00FFFFFF"
+                android:background="#FFFFFFFF"
+                android:onClick="setTime"
+                android:text="Button"
+                android:textColorHint="#000000"
+                android:textSize="15sp" />
+
+            <Button
+                android:id="@+id/setSubject"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@id/setTime"
+                android:layout_marginLeft="15dp"
+                android:layout_marginRight="15dp"
+                android:layout_marginBottom="20dp"
+                android:background="#FFFFFFFF"
                 android:onClick="ShowSubjectChoice"
                 android:text="Выбрать предмет" />
 
@@ -50,9 +67,10 @@
                 android:layout_marginLeft="15dp"
                 android:layout_marginRight="15dp"
                 android:layout_marginBottom="10dp"
-                android:background="#00FFFFFF"
+                android:background="#FFFFFFFF"
                 android:onClick="ShowLecturerChoice"
-                android:text="Выбрать преподавателя" />
+                android:text="Выбрать преподавателя"
+                android:textColor="#000000" />
 
             <Button
                 android:id="@+id/setAttendance"
@@ -60,7 +78,7 @@
                 android:layout_height="wrap_content"
                 android:layout_below="@id/setLecturer"
                 android:layout_marginLeft="15dp"
-                android:layout_marginTop="30dp"
+                android:layout_marginTop="10dp"
                 android:layout_marginRight="15dp"
                 android:background="@color/colorPrimary"
                 android:drawableLeft="@android:drawable/stat_sys_data_bluetooth"
@@ -78,6 +96,7 @@
                 android:layout_marginTop="10dp"
                 android:layout_marginRight="15dp"
                 android:background="@color/colorPrimaryDark"
+                android:onClick="saveLesson"
                 android:text="сохранить"
                 android:textColor="#FFFFFF" />
 
@@ -93,6 +112,7 @@
                 android:onClick="onCancelClick"
                 android:text="отмена"
                 android:textColor="@android:color/darker_gray" />
+
         </RelativeLayout>
 
     </LinearLayout>

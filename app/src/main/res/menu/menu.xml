@@ -1,0 +1,16 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.a.attendancereportpsu.MainActivity">
+
+    <item
+        android:id="@+id/action_update"
+        android:orderInCategory="100"
+        android:title="Обновить список"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_uFb"
+        android:orderInCategory="100"
+        android:title="Обновить из облака"
+        app:showAsAction="never" />
+</menu>
