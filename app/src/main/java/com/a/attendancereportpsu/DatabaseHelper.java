@@ -57,6 +57,14 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 + "name text,"
                 + "group_id text,"
                 + "student_id text" + ");");
+        db.execSQL("create table lessons ("
+                + "id text PRIMARY KEY,"
+                + "subject_id text,"
+                + "lecturer_id text,"
+                + "date long,"
+                + "time text"
+                + ");");
+
         Log.d("mLog", "База успешно создана! ");
 
 
@@ -85,6 +93,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         db.execSQL("delete from subjects");
 
     }
+    public void removeLessonsRows(SQLiteDatabase db) {
+        db.execSQL("delete from lessons");
+    }
 
     public void createTableMacs(SQLiteDatabase db) {
         db.execSQL("drop table if exists " + "macs");
@@ -96,6 +107,15 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
     public void removeMACRows(SQLiteDatabase db) {
         db.execSQL("delete from macs");
-
     }
+     public void createTableLessons(SQLiteDatabase db){
+         db.execSQL("drop table if exists lessons");
+         db.execSQL("create table lessons ("
+                 + "id text PRIMARY KEY,"
+                 + "subject_id text,"
+                 + "lecturer_id text,"
+                 + "date long,"
+                 + "time text"
+                 + ");");
+     }
 }

@@ -40,6 +40,18 @@ public class StudentAdapter extends RecyclerView.Adapter<StudentAdapter.StudentV
         }
 
     }
+    public void setAttendance(String student_id, boolean status){
+        try{
+            for (int j =0; j<attendance.size();j++) {
+                if(attendance.get(j).student_id.equals(student_id)) {
+                    attendance.get(j).setStatus(status);
+                    break;
+                }
+            }
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }
+    }
 
     public void clearItems() {
         listOfStudents.clear();

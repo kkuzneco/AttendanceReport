@@ -43,7 +43,7 @@ public class ShowLessons extends AppCompatActivity {
     DatabaseReference mDatabaseReference;
     FirebaseDatabase firebaseData;
     String uId;
-    String groupId = "123";
+    String groupId = "22407";
     DocumentReference docRef;
     StudentModel headmen;
     private ArrayList<LessonModel> list_lessons = new ArrayList<>();
@@ -150,6 +150,10 @@ public class ShowLessons extends AppCompatActivity {
                 exit();
                 return true;
             case R.id.action_report://если выбрано "Создать отчет"
+                Intent intent = new Intent(ShowLessons.this, Report.class);
+                intent.putExtra("group",groupId);
+//                Log.d("GROUP IN SL", groupId);
+                startActivityForResult(intent,2);
                 Log.d("TAG", groupId);
                 return true;
 

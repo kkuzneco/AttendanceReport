@@ -40,16 +40,14 @@ public class LessonAdd extends AppCompatActivity{
     Button setdateTime, setSubject, setLecturer, setStudents, setTime, buttonForTesting;//buttons
     String groupNumber = "123", lecturer_id = null, subject_id=null, lesson_id;
     SQLiteDatabase db;
-    LecturerModel lecturer;
     AttModelForDatabase att;
     LessonModel lesson;
-    String date;
+    long date;
     String time;
     String subject = null, institute = null;
     public ArrayList<AttendanceModel> attendance = new ArrayList<>();
     FirebaseFirestore mFirebaseDatabase;
-    DatabaseReference mDatabaseReference;
-    DatabaseReference resultRef;
+
     int index = 0, index1 = 0;
     private List<LessonModel> list_lessons = new ArrayList<>();
     @Override
@@ -160,7 +158,7 @@ private void setInitialTime(){
 }
     // установка начальных даты и времени
     private void setInitialDate() {
-        date = DateUtils.formatDateTime(this,  dateAndTime.getTimeInMillis(),DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_SHOW_YEAR);
+        date = dateAndTime.getTimeInMillis();
 
         setdateTime.setText(DateUtils.formatDateTime(this,
                 dateAndTime.getTimeInMillis(),

@@ -5,22 +5,36 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.location.LocationManager;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ProgressBar;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.FirebaseApp;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.Source;
+
+import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -29,11 +43,12 @@ public class Students extends AppCompatActivity implements Serializable {
    //адаптер для отображения студентов группы
     StudentAdapter studAdapter;
     ArrayList<AttendanceModel> attendance;
-    //сюда положим список студентов
-    // создаем объект для создания и управления версиями БД
+    private BluetoothAdapter bluetoothAdapter;
     DatabaseHelper dbHelper;
     StudentModel student;
     SQLiteDatabase db ;
+    ProgressBar pb1;
+    RecyclerView listOfStudents;
     ArrayList<StudentModel> studentsList;
     FirebaseFirestore mFirebaseDatabase;
     String groupNumber;
@@ -42,13 +57,14 @@ public class Students extends AppCompatActivity implements Serializable {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         Log.d("mlog", "ONCREATE");
         setContentView(R.layout.activity_students);
         studAdapter = new StudentAdapter();
         saveAtt = (Button)findViewById(R.id.save_btn);
         dbHelper = new DatabaseHelper(this);
         Intent intent = getIntent();
-
+        pb1 = (ProgressBar) findViewById(R.id.pb1);
         groupNumber = intent.getStringExtra("groupId");
         initFirebase();
         Log.d("myBluetooth",groupNumber);
@@ -87,7 +103,7 @@ public class Students extends AppCompatActivity implements Serializable {
 
     public void initRecyclerView(){
         Log.d("mlog", "initRecyclerView");
-        RecyclerView listOfStudents = findViewById(R.id.studentsRecycler);//привязка из лэйаут
+        listOfStudents = findViewById(R.id.studentsRecycler);//привязка из лэйаут
         listOfStudents.setLayoutManager(new LinearLayoutManager(this));//менедже
         listOfStudents.setAdapter(studAdapter);
     }
@@ -111,8 +127,7 @@ public class Students extends AppCompatActivity implements Serializable {
                 loadStudents();
                 return true;
             case R.id.bluetooth_check://если выбрано "Отметить по Bluetooth"
-                //Intent intent = new Intent(Students.this, BluetoothCheck.class);
-               // startActivity(intent);
+                bluetoothChecking();
                 return true;
             case R.id.register:
                 Intent intent1 = new Intent(Students.this, BluetoothRegister.class);
@@ -122,6 +137,106 @@ public class Students extends AppCompatActivity implements Serializable {
 
         }
         return super.onOptionsItemSelected(item);
+    }
+    public void bluetoothChecking(){
+        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+        if (bluetoothAdapter != null) {
+            Log.d("myBluetooth", "Bluetooth OK");
+        }
+        if (!bluetoothAdapter.isEnabled()) {
+            Intent enableBT = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableBT, 1);
+        }
+        if (bluetoothAdapter.isDiscovering()) {
+            bluetoothAdapter.cancelDiscovery();
+            Log.d("myBluetooth", "стоп поиск1");
+
+        }
+        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        boolean isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+        if (!isGpsEnabled) {
+            startActivityForResult(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS), 2);
+        }
+
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(BluetoothDevice.ACTION_FOUND);
+        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
+        filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED);
+        registerReceiver(mReceiver, filter);
+        if (bluetoothAdapter.isDiscovering()) {
+            bluetoothAdapter.cancelDiscovery();
+        }
+        boolean f = bluetoothAdapter.startDiscovery();
+
+    }
+    @Override
+    protected void onDestroy() {
+      try{
+          unregisterReceiver(mReceiver);
+      } catch (Exception e) {
+          e.printStackTrace();
+      }
+        Log.d("myBluetooth", "стоп поиск2");
+        super.onDestroy();
+    }
+    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
+        public void onReceive(Context context, Intent intent) {
+
+            Log.d("myBluetooth", "receive");
+            String action = intent.getAction();
+            if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+
+                BluetoothDevice device = intent
+                        .getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                if (device.getBondState() != BluetoothDevice.BOND_BONDED){
+                    String name = device.getName();
+                    String mac = device.getAddress();
+                    check_device(mac);
+                }
+
+            }
+            if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)) {
+               listOfStudents.setVisibility(View.INVISIBLE);
+                pb1.setVisibility(View.VISIBLE);
+            }
+            if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
+                pb1.setVisibility(View.INVISIBLE);
+                listOfStudents.setVisibility(View.VISIBLE);
+            }
+
+        }
+
+
+    };
+    public void check_device(String mac){
+        try{
+            DocumentReference docRef = mFirebaseDatabase.collection("devices").document(mac);
+            docRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+                @Override
+                public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                    if (task.isSuccessful()) {
+                        DocumentSnapshot document = task.getResult();
+                        if (document != null) {
+                           if(document.get("group_id").equals(groupNumber)){
+                               try {
+                                   studAdapter.setAttendance(document.get("student_id").toString(), true);
+                                   initRecyclerView();
+                               } catch (Exception e) {
+                                   e.printStackTrace();
+                               }
+                           }
+                        } else {
+                            Log.d("LOGGER", "No such document");
+                        }
+                    } else {
+                        Log.d("LOGGER", "get failed with ", task.getException());
+                    }
+                }
+            });
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
     public void loadStudents() {
         Log.d("mlog", "loadStudents");
@@ -178,6 +293,7 @@ public class Students extends AppCompatActivity implements Serializable {
 
     }
 
+
     public void save(View v){
 
         Intent intent = new Intent(Students.this, LessonAdd.class);
@@ -197,4 +313,5 @@ public class Students extends AppCompatActivity implements Serializable {
         mFirebaseDatabase = FirebaseFirestore.getInstance();
         //получаем ссылку для работы с базой данных
     }
+
 }
