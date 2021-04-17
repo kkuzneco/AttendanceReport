@@ -26,7 +26,7 @@
                 android:layout_marginRight="15dp"
                 android:layout_marginBottom="15dp"
                 android:background="@color/colorPrimaryDark"
-                android:onClick="createSortingLessonsList"
+                android:onClick="startCreateReport"
                 android:text="сформировать отчет"
                 android:textColor="#FFFFFF" />
 
@@ -52,15 +52,11 @@
                 app:columnOrderPreserved="true"
                 app:rowCount="2">
 
-                <Button
-                    android:id="@+id/finishDate"
+                <TextView
+                    android:id="@+id/textView3"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginLeft="15dp"
-                    android:layout_marginRight="15dp"
-                    android:layout_marginBottom="15dp"
-                    android:background="#00FFFFFF"
-                    android:text="Button" />
+                    android:text="с" />
 
                 <Button
                     android:id="@+id/startDate"
@@ -79,11 +75,15 @@
                     android:layout_height="wrap_content"
                     android:text="по" />
 
-                <TextView
-                    android:id="@+id/textView3"
+                <Button
+                    android:id="@+id/finishDate"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="с" />
+                    android:layout_marginLeft="15dp"
+                    android:layout_marginRight="15dp"
+                    android:layout_marginBottom="15dp"
+                    android:background="#00FFFFFF"
+                    android:text="Button" />
 
             </androidx.gridlayout.widget.GridLayout>
 

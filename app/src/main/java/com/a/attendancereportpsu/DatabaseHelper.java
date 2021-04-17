@@ -64,7 +64,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                 + "date long,"
                 + "time text"
                 + ");");
-
+        db.execSQL("create table attendance ("
+                + "id text PRIMARY KEY,"
+                + "lesson_id text,"
+                + "student_id text,"
+                + "status boolean"
+                + ");");
         Log.d("mLog", "База успешно создана! ");
 
 
@@ -118,4 +123,17 @@ public class DatabaseHelper extends SQLiteOpenHelper {
                  + "time text"
                  + ");");
      }
+    public void removeAttRows(SQLiteDatabase db) {
+        db.execSQL("delete from attendance");
+    }
+    public void createTableAttendance(SQLiteDatabase db){
+        db.execSQL("drop table if exists attendance");
+        db.execSQL("create table attendance ("
+                + "id text PRIMARY KEY,"
+                + "subject_id text,"
+                + "lecturer_id text,"
+                + "date long,"
+                + "time text"
+                + ");");
+    }
 }

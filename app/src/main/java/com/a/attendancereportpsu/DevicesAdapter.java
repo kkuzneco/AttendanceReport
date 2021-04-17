@@ -38,6 +38,7 @@ public class DevicesAdapter extends RecyclerView.Adapter<DevicesAdapter.DevicesV
     public DevicesAdapter.DevicesViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(cardview_device, parent, false);
+
         return new DevicesAdapter.DevicesViewHolder(view);
 
     }

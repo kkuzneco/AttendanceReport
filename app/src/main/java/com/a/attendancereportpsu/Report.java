@@ -10,6 +10,7 @@ import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Build;
 import android.os.Bundle;
@@ -26,15 +27,24 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.firebase.FirebaseApp;
+import com.google.firebase.database.core.view.Event;
+import com.google.firebase.firestore.CollectionReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.protobuf.DescriptorProtos;
+import com.google.protobuf.Internal;
 
+import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -42,15 +52,28 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import static com.google.protobuf.DescriptorProtos.*;
+import static com.google.protobuf.DescriptorProtos.FieldDescriptorProto.*;
 
 public class Report extends AppCompatActivity {
     Calendar dateAndTime;
     Button dateStart;
     LessonModel lesson;
+    StudentModel student;
+    int counter;
+    ArrayList<StudentModel> students;
     ArrayList<LessonModel> lessons;
+    ArrayList<String> lessonsIds;
     Button dateFinish;
     String groupNumber;
     SQLiteDatabase db;
+    int cont = 0;
+    int blockCount = 0;
+    int m = 0;
     FirebaseFirestore mFirebaseDatabase;
     DatabaseHelper dbHelper;
     ArrayList<String> subjects;
@@ -65,15 +88,17 @@ public class Report extends AppCompatActivity {
         dateAndTime = Calendar.getInstance();
         subjects = new ArrayList<>();
         dbHelper = new DatabaseHelper(this);
-        // dbHelper.createTableLessons(dbHelper.getWritableDatabase());
-
+        //dbHelper.createTableAttendance(dbHelper.getWritableDatabase());
+        students = new ArrayList<>();
         lessons = new ArrayList<>();
+        lessonsIds = new ArrayList<>();
         initFirebase();
         dateStart = (Button) findViewById(R.id.startDate);
         dateFinish = (Button) findViewById(R.id.finishDate);
         setDefaultDateStart();
         groupNumber = "22407";
-        getLessonsList();
+       counter = 0;
+       cont = 0;
         setDefaultDateFinish();
         dateFinish.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -96,7 +121,75 @@ public class Report extends AppCompatActivity {
             requestPermissionWithRationale();
             Log.d("myReport", "нет доступа к памяти");
         }
+        fillLessonsTable(new MyAttendanceCallback() {
+            @Override
+            public void onCallback() {
+
+            }
+        });
+        //формируем из бд список занятий подходящих под фильтр
+
+        //вносим в БД данные о посещаемости этих занятий
+        lessonsIds.clear();
+        //создаем локальный список студентов также из базы
+        createStudentsList();
+        //createSortingLessonsList();
+        createLessonsWithDateFilter();
+        blockCount = 2;
+
     }
+
+    private boolean createLessonsWithDateFilter() {
+        db = dbHelper.getWritableDatabase();
+        Cursor cursor = db.query("lessons", null, "date>="+start+" and date<="+finish+";", null, null, null, "date");
+        Log.d("myLessons", String.valueOf(start));
+        Log.d("myLessons", String.valueOf(finish));
+        if (cursor.moveToFirst()) {
+            Log.d("myLessons", "FOUND");
+            int idIndex = cursor.getColumnIndex("id");
+            int lecturerIndex = cursor.getColumnIndex("lecturer_id");
+            int subjectIndex = cursor.getColumnIndex("subject_id");
+            int dateIndex = cursor.getColumnIndex("date");
+            int timeIndex = cursor.getColumnIndex("time");
+            do {
+
+                Log.d("mLog", "ID = " + cursor.getString(idIndex) +
+                        ", subject = " + cursor.getString(subjectIndex) +
+                        ", time = " + cursor.getString(timeIndex));
+                lesson = new LessonModel(cursor.getString(idIndex),groupNumber, cursor.getString(subjectIndex), cursor.getString(lecturerIndex), cursor.getLong(dateIndex), cursor.getString(timeIndex));
+                lesson = new LessonModel(cursor.getString(idIndex),groupNumber, cursor.getString(subjectIndex), cursor.getString(lecturerIndex), cursor.getLong(dateIndex), cursor.getString(timeIndex));
+                lessons.add(lesson);
+                int subIndex = cursor.getColumnIndex("subject_id");
+                if(!subjects.contains(cursor.getString(subIndex)))
+                    subjects.add(cursor.getString(subIndex));
+                lessonsIds.add(cursor.getString(idIndex));
+                Log.d("myLessons", String.valueOf(lessons.size()) + " " + lessons.get(lessons.size() - 1).time);
+            } while (cursor.moveToNext());
+        } else
+            Log.d("mLog", "0 rows");
+        cursor.close();
+        return true;
+     //в subjects будут лежать id предметов, для которых на выбранный период есть записи о посещаемости
+       /* try {
+            db = dbHelper.getWritableDatabase();
+            Cursor cursor1 = db.query("lessons", null, "date>="+start+" and date<="+finish+";", null, "subject_id", null, null);
+
+            if (cursor1.moveToFirst()) {
+                int subjectIndex = cursor1.getColumnIndex("subject_id");
+                do {
+                    subjects.add(cursor1.getString(subjectIndex));
+                } while (cursor1.moveToNext());
+            } else
+                Log.d("mLog", "0 rows");
+            cursor1.close();
+
+
+        } catch (Exception exception) {
+            exception.printStackTrace();
+        }*/
+    }
+
+
     private void requestPerms(){
         String[] permissions = new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE};
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
@@ -135,39 +228,64 @@ public class Report extends AppCompatActivity {
 
     DatePickerDialog.OnDateSetListener d = new DatePickerDialog.OnDateSetListener() {
         public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
-            dateAndTime.set(Calendar.YEAR, year);
-            dateAndTime.set(Calendar.MONTH, monthOfYear);
-            dateAndTime.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+            //dateAndTime.set(Calendar.YEAR, );
+        //    dateAndTime.set(Calendar.MONTH, );
+          //  dateAndTime.set(Calendar.DAY_OF_MONTH, );
+         //   dateAndTime.set(Calendar.HOUR_OF_DAY, 0);
+            dateAndTime.set(year,monthOfYear,dayOfMonth,0,0,0);
+           // dateAndTime.set(Calendar.MINUTE, 0);
+           // dateAndTime.set(Calendar.SECOND, 1);
             setInitialDateStart();
         }
     };
     DatePickerDialog.OnDateSetListener d1 = new DatePickerDialog.OnDateSetListener() {
         public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
-            dateAndTime.set(Calendar.YEAR, year);
-            dateAndTime.set(Calendar.MONTH, monthOfYear);
-            dateAndTime.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+
+          //  dateAndTime.set(Calendar.YEAR, year);
+          //  dateAndTime.set(Calendar.MONTH, monthOfYear);
+           // dateAndTime.set(Calendar.DAY_OF_MONTH, dayOfMonth);
+            dateAndTime.set(year,monthOfYear,dayOfMonth,23,59,59);
             setInitialDateFinish();
         }
     };
 
     private void setInitialDateStart() {
         // time = DateUtils.formatDateTime(this,  dateAndTime.getTimeInMillis(),DateUtils.FORMAT_SHOW_TIME);
+        String date1 = DateUtils.formatDateTime(this,
+                dateAndTime.getTimeInMillis(),
+                DateUtils.FORMAT_SHOW_TIME);
+        String date2= DateUtils.formatDateTime(this,
+                dateAndTime.getTimeInMillis(),
+                DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_SHOW_YEAR);
+        Log.d("myLessonsD", date1 +" "+date2);
+
         String date = DateUtils.formatDateTime(this,
                 dateAndTime.getTimeInMillis(),
                 DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_SHOW_YEAR);
         start = dateAndTime.getTimeInMillis();
         dateStart.setText(date);
-
+        //dbHelper.removeAttRows(dbHelper.getWritableDatabase());
+        Log.d("myReport", String.valueOf(students.size()));
+        lessonsIds.clear();
+        //createLessonsWithDateFilter();
     }
 
     private void setInitialDateFinish() {
-        // time = DateUtils.formatDateTime(this,  dateAndTime.getTimeInMillis(),DateUtils.FORMAT_SHOW_TIME);
-
+        String date1 = DateUtils.formatDateTime(this,
+                dateAndTime.getTimeInMillis(),
+                DateUtils.FORMAT_SHOW_TIME);
+        String date2= DateUtils.formatDateTime(this,
+                dateAndTime.getTimeInMillis(),
+                DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_SHOW_YEAR);
+        Log.d("myLessonsD", date1 +" "+date2);
         String date = DateUtils.formatDateTime(this,
                 dateAndTime.getTimeInMillis(),
                 DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_SHOW_YEAR);
         finish = dateAndTime.getTimeInMillis();
         dateFinish.setText(date);
+
+        lessonsIds.clear();
+       // createLessonsWithDateFilter();
     }
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         boolean allowed = true;
@@ -205,88 +323,97 @@ public class Report extends AppCompatActivity {
 
     }
 
-    public void getLessonsList() {
-        db = dbHelper.getWritableDatabase();
-        dbHelper.removeLessonsRows(db);
-        lesson = new LessonModel("", "", "", 0, "");
+    public interface MyAttendanceCallback {
+        void onCallback();
+    }
+    public void fillLessonsTable(MyAttendanceCallback myCallBack){
+
         mFirebaseDatabase.collection("lessons").whereEqualTo("group_id", groupNumber).get()
                 .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
-
                     @Override
                     public void onComplete(@NonNull Task<QuerySnapshot> task) {
                         if (task.isSuccessful()) {
+
                             for (QueryDocumentSnapshot document : task.getResult()) {
                                 if (document.exists()) {
-                                    lesson.group_id = document.get("group_id").toString();
-                                    lesson.subject_id = document.get("subject_id").toString();
-                                    lesson.lecturer_id = document.get("lecturer_id").toString();
-                                    lesson.time = document.get("time").toString();
-                                    lesson.date = (long) document.get("date");
-                                    lessons.add(new LessonModel(document.get("group_id").toString(), document.get("subject_id").toString(), document.get("lecturer_id").toString(), (long) document.get("date"), document.get("time").toString()));
-                                    Log.d("sortedMy", lesson.date + lesson.subject_id);
-                                    db.execSQL("insert into lessons(id, lecturer_id, subject_id,date,time) values (" + "'" + document.getId() + "'," + "'" + lesson.lecturer_id + "'," + "'" + lesson.subject_id + "'," + "'" + lesson.date + "'," + "'" + lesson.time + "');");
-                                    // Log.d("mlog", "insert into students(id, name, group_id) values (" + "'"+student.id+"',"+"'"+student.name+"',"+"'"+student.group_id+"');");
+
+                                    try {
+                                        Log.d("myLessons", "поиск...");
+                                        Log.d("myLessons","insert into lessons(id, subject_id, lecurer_id, date, time) values (" + "'" + document.getId() + "'," + "'" + document.get("subject_id") + "'," + "'" + document.get("lecturer_id") + "'," + (Long)document.get("date") +  ","+ "'" + document.get("time") + "');");
+                                        //  lessons.add(new LessonModel(document.getId(), String.valueOf(document.get("group_id")),  String.valueOf(document.get("subject_id")), String.valueOf(document.get("lecturer_id")), Long.valueOf((Long)document.get("date")),String.valueOf(document.get("time"))));
+                                        db.execSQL("insert into lessons(id, subject_id, lecturer_id, date, time) values (" + "'" + document.getId() + "'," + "'" + document.get("subject_id") + "'," + "'" + document.get("lecturer_id") + "'," + (Long)document.get("date") +  ","+ "'" + document.get("time") + "');");
+                                    } catch (SQLException e) {
+                                        e.printStackTrace();
+                                    }
+
+
                                 }
                             }
-//                            Log.d("element", String.valueOf(studentsList.size()));
+                            myCallBack.onCallback();
                         } else {
-                            Log.d("TAG", "Error getting documents: ", task.getException());
+                            Log.d("myLessons", "Error getting documents: ", task.getException());
                         }
 
                     }
 
                 });
 
-    }
-
-
-    public void createSortingLessonsList(View v) {
-
-        try {
-            db = dbHelper.getWritableDatabase();
-            Cursor cursor = db.query("lessons", null, null, null, null, null, "date");
-
-            if (cursor.moveToFirst()) {
-                int idIndex = cursor.getColumnIndex("id");
-                int lecturerIndex = cursor.getColumnIndex("lecturer_id");
-                int subjectIndex = cursor.getColumnIndex("subject_id");
-                int dateIndex = cursor.getColumnIndex("date");
-                int timeIndex = cursor.getColumnIndex("time");
-                do {
-
-                    Log.d("mLog", "ID = " + cursor.getString(idIndex) +
-                            ", subject = " + cursor.getString(subjectIndex) +
-                            ", time = " + cursor.getString(timeIndex));
-                    lesson = new LessonModel(groupNumber, cursor.getString(subjectIndex), cursor.getString(lecturerIndex), cursor.getLong(dateIndex), cursor.getString(timeIndex));
-                    lessons.add(lesson);
-                    Log.d("myLessons", String.valueOf(lessons.size()) + " " + lessons.get(lessons.size() - 1).time);
-                } while (cursor.moveToNext());
-            } else
-                Log.d("mLog", "0 rows");
-            cursor.close();
-
-        } catch (Exception exception) {
-            exception.printStackTrace();
-        }
-        try {
-            db = dbHelper.getWritableDatabase();
-            Cursor cursor = db.query("lessons", null, null, null, "subject_id", null, null);
-
-            if (cursor.moveToFirst()) {
-                int subjectIndex = cursor.getColumnIndex("subject_id");
-                do {
-                    subjects.add(cursor.getString(subjectIndex));
-                } while (cursor.moveToNext());
-            } else
-                Log.d("mLog", "0 rows");
-            cursor.close();
-
-        } catch (Exception exception) {
-            exception.printStackTrace();
-        }
-        createExcelReport();
 
     }
+    public void getAttendanceForLesson(MyAttendanceCallback myCallback) {
+        //для каждого студента\
+        Log.d("myReport", "заполняем  ");
+        mFirebaseDatabase.collection("attendance").get()
+                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                            public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                                if (task.isSuccessful()) {
+
+                                    for (QueryDocumentSnapshot document : task.getResult()) {
+                                        if (document.exists()) {
+
+                                                try {
+                                                    Log.d("myLessons", "поиск...");
+                                                    Log.d("myLessons", "insert into attendance(id, lesson_id, student_id, status) values (" + "'" + document.getId() + "'," + "'" + document.get("lesson_id") + "'," + "'" + document.get("student_id") + "'," + (Boolean) document.get("status") + ");");
+                                                  if(lessonsIds.contains(document.get("lesson_id"))) {
+                                                      Log.d("myLessons", "found");//  lessons.add(new LessonModel(document.getId(), String.valueOf(document.get("group_id")),  String.valueOf(document.get("subject_id")), String.valueOf(document.get("lecturer_id")), Long.valueOf((Long)document.get("date")),String.valueOf(document.get("time"))));
+                                                      db.execSQL("insert into attendance(id, lesson_id, student_id,status) values (" + "'" + document.getId() + "'," + "'" + document.get("lesson_id") + "'," + "'" + document.get("student_id") + "'," + "'" + (Boolean) document.get("status") + "'" + ");");
+
+                                                  }} catch (SQLException e) {
+                                                    e.printStackTrace();
+                                                }
+
+                                        }
+                                    }
+                                    myCallback.onCallback();
+                                } else {
+                                    Log.d("myLessons", "Error getting documents: ", task.getException());
+                                }
+
+                            }
+
+                        });
+
+    }
+
+        public void startCreateReport(View v){
+           boolean creating =  createLessonsWithDateFilter();
+           if(creating) createReport();
+        }
+
+        public void createReport(){
+            getAttendanceForLesson(new MyAttendanceCallback() {
+                @Override
+                public void onCallback() {
+                    cont++;
+                    Log.d("myLessonsC", "Callback");
+                    createExcelReport();
+                }
+            });
+ //      dbHelper.removeLessonsRows(dbHelper.getWritableDatabase());
+   //         lessons.clear();
+//            getLessonsList();
+        }
 
     public void initFirebase() {
         //инициализируем наше приложение для Firebase согласно параметрам в google-services.json
@@ -295,79 +422,157 @@ public class Report extends AppCompatActivity {
         mFirebaseDatabase = FirebaseFirestore.getInstance();
         //получаем ссылку для работы с базой данных
     }
+    public void createStudentsList(){
 
-    public void createExcelReport() {
+        db = dbHelper.getReadableDatabase();
+        Cursor cursor = db.query("students", null, null, null, null, null, "name");
+
+        if (cursor.moveToFirst()) {
+            Log.d("myLessons", "FOUND");
+            int idIndex = cursor.getColumnIndex("id");
+            int nameIndex = cursor.getColumnIndex("name");
+
+            do {
+                student = new StudentModel(cursor.getString(idIndex),groupNumber,cursor.getString(nameIndex));
+                students.add(student);
+
+            } while (cursor.moveToNext());
+        } else
+            Log.d("mLog", "0 rows");
+        cursor.close();
+    }
+
+    public void createExcelReport()  {
+
+        getAttendanceForLesson(new MyAttendanceCallback() {
+            @Override
+            public void onCallback() {
+                    goToCreating();
+            }
+        });
+    }
+    public void goToCreating(){
+
+
         HSSFSheet sheet1 = null;
+        ArrayList<LessonModel> lessonFilter = new ArrayList<>();
         int j = 0;
         // создание самого excel файла в памяти
         HSSFWorkbook workbook = new HSSFWorkbook();
+
         // создание листа с названием "Просто лист"
         int i;
         //все id предметов в базе (для каждого предмета)
         for (i = 0; i < subjects.size(); i++) {
+            lessonFilter.clear();
+            Log.d("myLessons", String.valueOf(subjects.size()));
             j = 0;
             //получаем название текущего предмета
             Cursor cursor = db.query("subjects", null, "id='" + subjects.get(i)+"'", null, null, null, null);
             cursor.moveToFirst();
-
+            int typeName = cursor.getColumnIndex("type");
             int indexName = cursor.getColumnIndex("name");
             //название здесь
-            String u = cursor.getString(indexName);
+            String u = cursor.getString(indexName)+'('+cursor.getString(typeName)+')';
           //  String id_= subjects.get(i);
+            cursor.close();
 
+            //получаем название текущего предмета
+            Cursor cursor_filter = db.query("lessons", null, "subject_id='" + subjects.get(i)+"'", null, null, null, "date");
+            cursor_filter.moveToFirst();
+            int indexId = cursor_filter.getColumnIndex("id");
+            int indexSubject = cursor_filter.getColumnIndex("subject_id");
+            int indexLecturer = cursor_filter.getColumnIndex("lecturer_id");
+            int indexDate = cursor_filter.getColumnIndex("date");
+            int indexTime = cursor_filter.getColumnIndex("time");
+            //название здесь
+            if(cursor_filter.moveToFirst()){
+                do{
+                  lessonFilter.add(new LessonModel(cursor_filter.getString(indexId),groupNumber,cursor_filter.getString(indexSubject),cursor_filter.getString(indexLecturer),cursor_filter.getLong(indexDate),cursor_filter.getString(indexTime)));
+                }
+            while (cursor_filter.moveToNext());}
+            //  String id_= subjects.get(i);
+            cursor_filter.close();
             Log.d("myLessons", u);
             try {
-                //создаем лист с названием предмета
                 sheet1 = workbook.createSheet(u);
+
+                //создаем лист с названием предмета
+
+                Row row = sheet1.createRow(0);
                 //запишем данные в 0 строку
-                int rowNum = 0;
+                int k;
+                for (k = 0; k < lessonFilter.size(); k++) {
+
+                        //создаем 0 строку
+                        Log.d("myLessons", "нашли предмет с текущим аиди");
+                        //создаем на листе строку 0
+                        Log.d("myLessons", "lessons found");
+                        //столбец
+                        j++;
+
+                        //получаем время в формате для текущего занятия
+                        dateAndTime.setTimeInMillis(lessonFilter.get(k).date);
+                        Log.d("myLessonsj", String.valueOf(j));
+                        Log.d("myLessonsj", String.valueOf(dateAndTime.getTimeInMillis()));
+                        row.createCell(j).setCellValue(DateUtils.formatDateTime(this,
+                                dateAndTime.getTimeInMillis(),
+                                DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_SHOW_YEAR));
+
+                }
 
                 //по каждому фильтрованному  занятию проходим
-                for (i = 0; i < lessons.size(); i++) {
 
-                    // Row row = sheet.get(i).createRow(rowNum);
-                    //если по текущему предмету заятие
-                    if(lessons.get(i).subject_id.equals(subjects.get(i))){
-                        //создаем 0 строку
+                 int rowNum = 0;
+                 for (m = 0; m < students.size(); m++) {
+                            Row row1 = sheet1.createRow(m + 1);
+                            row1.createCell(0).setCellValue(students.get(m).name);
+                            for (int k1 = 0; k1 <lessonFilter.size(); k1++) {
+                            counter = 1;
 
-                    //если у текущего занятия входит в рамки времени
-                    if (lessons.get(i).date >= start && lessons.get(i).date <= finish) {
-                        //создаем на листе строку 0
-                        j++;
-                        Row row = sheet1.createRow(rowNum);
-                        //получаем время в формате текущего занятия
-                        dateAndTime.setTimeInMillis(lessons.get(i).date);
+                            int l;
+                                    Log.d("myLessonsBC", String.valueOf(m));
+                                    //  row1.createCell(counter).setCellValue("+");
+                                    try {
+                                        Cursor cursor2 = db.query("attendance", null, "lesson_id='" + lessonFilter.get(k1).id + "'" + " and student_id = '" + students.get(m).id + "'", null, null, null, null);
+                                        cursor2.moveToFirst();
+                                        int status = cursor2.getColumnIndex("status");
+                                        if (Boolean.parseBoolean(cursor2.getString(status))== false) {
+                                            Log.d("myLessons", "false");
+                                            Cell r = row1.createCell(k1 + 1);
+                                            r.setCellValue("-");
+                                           // r.setCellStyle(style1);
 
-                        row.createCell(j).setCellValue(DateUtils.formatDateTime(this,
-                                    dateAndTime.getTimeInMillis(),
-                                    DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_SHOW_YEAR));
-                        j++;
-                    }
+                                        } else {
+                                            Log.d("myLessons", "true");
+                                            Cell r =row1.createCell(k1+1);
+                                            r.setCellValue("+");
+                                           // r.setCellStyle(style2);
+
+                                        }
+
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+
+
+                        }
+
                 }
-                    else
-                        continue;
-                }
-            }
-            catch (Exception e) {
+
+            } catch (Exception e) {
                 e.printStackTrace();
             }
-//            sheet.add(sheet1);
         }
-        // счетчик для строк
-      /*  int rowNum = 0;
-        for (i = 0; i < lessons.size(); i++) {
-           // Row row = sheet.get(i).createRow(rowNum);
-            Row row = sheet1.createRow(rowNum);
-            dateAndTime.setTimeInMillis(lessons.get(i).date);
-            row.createCell(0).setCellValue(DateUtils.formatDateTime(this,
-                    dateAndTime.getTimeInMillis(),
-                    DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_SHOW_YEAR));
 
-
-        }*/
-        try  {
-            FileOutputStream out = new FileOutputStream(new File(Environment.getExternalStorageDirectory().getAbsolutePath(),"Study reports/Report.xls"));
+            try  {
+            FileOutputStream out = new FileOutputStream(new File(Environment.getExternalStorageDirectory().getAbsolutePath(), String.format("Study reports/Report" +groupNumber+"_"+ DateUtils.formatDateTime(this,
+                    start,
+                    DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_SHOW_YEAR)+"-"+DateUtils.formatDateTime(this,
+                    finish,
+                    DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_SHOW_YEAR)+".xls")));
             workbook.write(out);
+            out.close();
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -375,7 +580,7 @@ public class Report extends AppCompatActivity {
         System.out.println("Excel файл успешно создан!");
 
     }
-    private void makeFolder(){
+        private void makeFolder(){
         File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath(),"Study reports");
 
         if (!file.exists()){
@@ -392,7 +597,7 @@ public class Report extends AppCompatActivity {
         }
         else {
             Log.d("myLessons", "папка есь");
-            Toast.makeText(Report.this, "Folder already exist", Toast.LENGTH_SHORT).show();
+          //  Toast.makeText(Report.this, "Folder already exist", Toast.LENGTH_SHORT).show();
         }
     }
     private boolean hasPermissions(){
