@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.R.id;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
@@ -11,24 +12,32 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
+import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.text.format.DateUtils;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.TimePicker;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 import com.google.type.Color;
+
+import org.apache.poi.ss.usermodel.Cell;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -40,14 +49,17 @@ public class LessonAdd extends AppCompatActivity{
     Button setdateTime, setSubject, setLecturer, setStudents, setTime, buttonForTesting;//buttons
     String groupNumber = "123", lecturer_id = null, subject_id=null, lesson_id;
     SQLiteDatabase db;
+    Boolean isAttendanceFilling = false;
+    DatabaseHelper dbHelper;
     AttModelForDatabase att;
     LessonModel lesson;
     long date;
+    Boolean isEdit = false;
     String time;
     String subject = null, institute = null;
     public ArrayList<AttendanceModel> attendance = new ArrayList<>();
     FirebaseFirestore mFirebaseDatabase;
-
+    LessonModel currentLesson;
     int index = 0, index1 = 0;
     private List<LessonModel> list_lessons = new ArrayList<>();
     @Override
@@ -61,20 +73,127 @@ public class LessonAdd extends AppCompatActivity{
         setLecturer=(Button)findViewById(R.id.setLecturer);
         setStudents=(Button)findViewById(R.id.setAttendance);
 
-        DatabaseHelper dbHelper = new DatabaseHelper(this);
-        db = dbHelper.getReadableDatabase();
 
+        currentLesson = new LessonModel(null,null,null,dateAndTime.getTimeInMillis(),null);
+        dbHelper = new DatabaseHelper(this);
+        db = dbHelper.getReadableDatabase();
+        initFirebase();
         Intent intent_1 = getIntent();
         groupNumber = intent_1.getStringExtra("group");
-
+        currentLesson.group_id = groupNumber;
+        if(intent_1.getSerializableExtra("lesson")!=null) {
+            isEdit = true;
+            Bundle bundle = intent_1.getExtras();
+            currentLesson = (LessonModel) bundle.getSerializable("lesson");
+            dateAndTime.setTimeInMillis(currentLesson.date);
+            getAttendanceForLesson(new LessonAdd.MyAttendanceCallback() {
+                @Override
+                public void onCallback() {
+                    fillAttendance();
+                    Log.d("myLessonsC", "Callback");
+                }
+            });
+        }
+        else fillEmptyAttendance();
         Log.d("GROUP IN LAdd", groupNumber);
-        setInitialDate();
-        setInitialTime();
-        initFirebase();
+        setData();
+
         Log.d("TIIIME",  DateUtils.formatDateTime(this,  dateAndTime.getTimeInMillis(),DateUtils.FORMAT_SHOW_TIME));
 
     }
+    public void fillAttendance(){
+        Cursor cursor2 = db.query("attendance", null,  "lesson_id = '"+currentLesson.id+"'", null, null, null, null);
+        if(cursor2.moveToFirst()) {
+          do {
+              int status = cursor2.getColumnIndex("status");
+              int student = cursor2.getColumnIndex("student_id");
+              attendance.add(new AttendanceModel(cursor2.getString(student), Boolean.parseBoolean(cursor2.getString(status))));
+          }
+          while(cursor2.moveToNext());
+        }
+    }
+    public void fillEmptyAttendance(){
+        Cursor cursor2 = db.query("students", null,  null, null, null, null, null);
+        if(cursor2.moveToFirst()) {
+            do {
 
+                int student = cursor2.getColumnIndex("id");
+                attendance.add(new AttendanceModel(cursor2.getString(student), false));
+            }
+            while(cursor2.moveToNext());
+        }
+    }
+
+    public interface MyAttendanceCallback {
+        void onCallback();
+    }
+    public void getAttendanceForLesson(LessonAdd.MyAttendanceCallback myCallback) {
+        //для каждого студента\
+        Log.d("myReport", "заполняем  ");
+        mFirebaseDatabase.collection("attendance").get()
+                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        if (task.isSuccessful()) {
+
+                            for (QueryDocumentSnapshot document : task.getResult()) {
+                                if (document.exists()) {
+
+                                    try {
+                                        Log.d("myLessons", "поиск...");
+                                        Log.d("myLessons", "insert into attendance(id, lesson_id, student_id, status) values (" + "'" + document.getId() + "'," + "'" + document.get("lesson_id") + "'," + "'" + document.get("student_id") + "'," + (Boolean) document.get("status") + ");");
+                                        if(document.get("lesson_id").equals(currentLesson.id)) {
+                                            Log.d("myLessons", "found");//  lessons.add(new LessonModel(document.getId(), String.valueOf(document.get("group_id")),  String.valueOf(document.get("subject_id")), String.valueOf(document.get("lecturer_id")), Long.valueOf((Long)document.get("date")),String.valueOf(document.get("time"))));
+                                            db.execSQL("insert into attendance(id, lesson_id, student_id,status) values (" + "'" + document.getId() + "'," + "'" + document.get("lesson_id") + "'," + "'" + document.get("student_id") + "'," + "'" + (Boolean) document.get("status") + "'" + ");");
+
+                                        }} catch (SQLException e) {
+                                        e.printStackTrace();
+                                    }
+
+                                }
+                            }
+                            myCallback.onCallback();
+                        } else {
+                            Log.d("myLessons", "Error getting documents: ", task.getException());
+                        }
+
+                    }
+
+                });
+
+    }
+
+
+
+    public void setData(){
+        setInitialDate();
+        setInitialTime();
+        if(currentLesson.equals(null)) {
+            setSubject.setText("Выберите предмет");
+            setLecturer.setText("Выберите преподавателя");
+        }
+        else
+        {
+
+            Cursor cursor = db.query("subjects", null, "id = '"+currentLesson.subject_id+"'", null, null, null, null);
+            if (cursor.moveToFirst()) {
+                Log.d("myLessons", "FOUND");
+                int indName = cursor.getColumnIndex("name");
+                int indType= cursor.getColumnIndex("type");
+                setSubject.setText(cursor.getString(indName)+"("+cursor.getString(indType)+")");
+            } else
+                Log.d("mLog", "0 rows");
+
+            cursor = db.query("lecturers", null, "id = '"+currentLesson.lecturer_id+"'", null, null, null, null);
+            if (cursor.moveToFirst()) {
+                Log.d("myLessons", "FOUND");
+                int indName = cursor.getColumnIndex("name");
+                setLecturer.setText(cursor.getString(indName));
+            } else
+                Log.d("mLog", "0 rows");
+            cursor.close();
+        }
+    }
     /*
     Нажали на "Отмена"
      */
@@ -152,9 +271,13 @@ public class LessonAdd extends AppCompatActivity{
     }
 private void setInitialTime(){
         time = DateUtils.formatDateTime(this,  dateAndTime.getTimeInMillis(),DateUtils.FORMAT_SHOW_TIME);
-    setTime.setText(DateUtils.formatDateTime(this,
+        setTime.setText(DateUtils.formatDateTime(this,
             dateAndTime.getTimeInMillis(),
             DateUtils.FORMAT_SHOW_TIME));
+        currentLesson.date = dateAndTime.getTimeInMillis();
+        currentLesson.time = DateUtils.formatDateTime(this,
+                dateAndTime.getTimeInMillis(),
+                DateUtils.FORMAT_SHOW_TIME);
 }
     // установка начальных даты и времени
     private void setInitialDate() {
@@ -196,8 +319,9 @@ private void setInitialTime(){
      */
     public void ShowSubjectChoice(View v){
         Intent intent = new Intent(LessonAdd.this,Subject.class);
+
         intent.putExtra("groupId", groupNumber);
-        intent.putExtra("subject", subject_id);
+        intent.putExtra("subject", currentLesson.subject_id);
         intent.putExtra("institute", institute);
         startActivityForResult(intent,1);
 
@@ -210,11 +334,12 @@ private void setInitialTime(){
         intent.putExtra("groupId", groupNumber);
        // lecturer = new LecturerModel("","","");
         intent.putExtra("institute", institute);
-        intent.putExtra("lecturer_id", lecturer_id);
+        intent.putExtra("lecturer_id", currentLesson.lecturer_id);
         startActivityForResult(intent,2);
 
     }
     public void ShowStudentChoice(View v){
+        isAttendanceFilling = true;
         Intent intent = new Intent(LessonAdd.this,Students.class);
         intent.putExtra("groupId", groupNumber);
         Bundle bundle = new Bundle();
@@ -232,31 +357,20 @@ private void setInitialTime(){
            // Bundle bundle = data.getExtras();
            // lecturer = new LecturerModel("","","");
             lecturer_id = data.getStringExtra("lecturer_id");
+            currentLesson.lecturer_id = lecturer_id;
             if (lecturer_id!= null){
-                institute = data.getStringExtra("institute");
-                //String helper = "id = '"+String.valueOf(lecturer_id)+"'";
-                Log.d("mLog", String.valueOf(lecturer_id));
-                Cursor helper = db.query("lecturers",null, "id = ?", new String[]{lecturer_id}, null, null,null);
-                helper.moveToFirst();
-                int IndexOfName = helper.getColumnIndex("name");
-                Log.d("mLog", String.valueOf(helper));
-                String result = helper.getString(IndexOfName);
-                Log.d("mLog", result);
-                setLecturer.setText(result);
+                setData();
             }
 
         }
         if (requestCode == 1) {
            // String a = data.getStringExtra("name");
-            if(data.getStringExtra("subject_id")!=null)
-               subject_id = data.getStringExtra("subject_id");
+            if(data.getStringExtra("subject_id")!=null) {
+                subject_id = data.getStringExtra("subject_id");
+                currentLesson.subject_id = subject_id;
+            }
             if (subject_id!= null) {
-                Cursor helper = db.query("subjects", null, "id = ?", new String[]{subject_id}, null, null, null);
-                helper.moveToFirst();
-                int IndexOfName = helper.getColumnIndex("name");
-                subject = helper.getString(IndexOfName);
-                // Log.d("mLog", a);
-                setSubject.setText(subject);
+                setData();
             }
         }
         if (requestCode == 3) {
@@ -272,12 +386,15 @@ private void setInitialTime(){
 
         }
     }
+
     public void saveLesson(View v){
-        if(groupNumber!=null&&subject_id!=null&&lecturer_id!=null){
+
+        if(groupNumber!=null&&currentLesson.subject_id!=null&&currentLesson.lecturer_id!=null&&(!isEdit)){
+
             if(hasConnection(this)){
             lesson = new LessonModel(groupNumber,subject_id,lecturer_id, date, time);
 
-            mFirebaseDatabase.collection("lessons")
+                mFirebaseDatabase.collection("lessons")
                 .add(lesson)
                 .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
                     @Override
@@ -320,7 +437,56 @@ private void setInitialTime(){
             else Toast.makeText(LessonAdd.this, "Ошибка подключения!",
                     Toast.LENGTH_SHORT).show();
         }
-        else Toast.makeText(LessonAdd.this, "Заполнены не все поля!",
+        else
+            if(isEdit){
+                mFirebaseDatabase.collection("lessons")
+                        .document(currentLesson.id).set(currentLesson);
+                mFirebaseDatabase.collection("attendance").whereEqualTo("lesson_id", currentLesson.id).get()
+                .addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+                    @Override
+                    public void onComplete(@NonNull Task<QuerySnapshot> task) {
+                        if (task.isSuccessful()) {
+
+                            for (QueryDocumentSnapshot document : task.getResult()) {
+                                if (document.exists()) {
+
+                                    try {
+                                        Log.d("myLessons", "поиск...");
+                                        Log.d("myLessons","insert into lessons(id, subject_id, lecurer_id, date, time) values (" + "'" + document.getId() + "'," + "'" + document.get("subject_id") + "'," + "'" + document.get("lecturer_id") + "'," + (Long)document.get("date") +  ","+ "'" + document.get("time") + "');");
+                                        //  lessons.add(new LessonModel(document.getId(), String.valueOf(document.get("group_id")),  String.valueOf(document.get("subject_id")), String.valueOf(document.get("lecturer_id")), Long.valueOf((Long)document.get("date")),String.valueOf(document.get("time"))));
+                                       ;
+                                        String st = (String) document.get("student_id");
+                                       int stat = 0;
+                                        for (int j =0;j<attendance.size();j++){
+                                            if(st.equals(attendance.get(j).student_id)){
+                                                stat = j;
+                                                break;
+                                            }
+                                        }
+                                        att = new AttModelForDatabase(attendance.get(stat).student_id, attendance.get(stat).status, currentLesson.id);
+                                        mFirebaseDatabase.collection("attendance")
+                                                .document(document.getId()).set(att);
+                                    } catch (SQLException e) {
+                                        e.printStackTrace();
+                                    }
+
+
+                                }
+                            }
+
+                        } else {
+                            Log.d("myLessons", "Error getting documents: ", task.getException());
+                        }
+                    }
+
+                });
+                Intent intent = new Intent(LessonAdd.this, LessonAdd.class);
+                setResult(RESULT_OK,intent);
+                finishActivity(3);
+                finish();
+            }
+
+            else Toast.makeText(LessonAdd.this, "Заполнены не все поля!",
                 Toast.LENGTH_SHORT).show();
 
         }

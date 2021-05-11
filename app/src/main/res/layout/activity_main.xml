@@ -4,13 +4,16 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:scrollbarTrackHorizontal="@color/colorAccent"
     tools:context=".MainActivity">
 
     <ProgressBar
         android:id="@+id/progressBar"
-        style="?android:attr/progressBarStyleHorizontal"
+        style="@android:style/Widget.DeviceDefault.Light.ProgressBar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:scrollbarThumbVertical="@color/colorAccent" />
 
     <LinearLayout
         android:id="@+id/linearLayout2"
@@ -67,7 +70,7 @@
             android:layout_marginRight="15dp"
             android:background="@color/colorPrimary"
             android:text="войти"
-            android:textColor="#99A6AE" />
+            android:textColor="#FFFFFF" />
 
     </LinearLayout>
 

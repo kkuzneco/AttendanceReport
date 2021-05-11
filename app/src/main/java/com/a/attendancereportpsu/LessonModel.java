@@ -1,6 +1,8 @@
 package com.a.attendancereportpsu;
 
-public class LessonModel  {
+import java.io.Serializable;
+
+public class LessonModel implements Serializable {
     public String subject_id;
     public String lecturer_id;
     public long date;

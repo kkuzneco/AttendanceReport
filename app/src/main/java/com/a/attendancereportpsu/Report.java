@@ -141,7 +141,8 @@ public class Report extends AppCompatActivity {
 
     private boolean createLessonsWithDateFilter() {
         db = dbHelper.getWritableDatabase();
-        Cursor cursor = db.query("lessons", null, "date>="+start+" and date<="+finish+";", null, null, null, "date");
+        Cursor cursor = db.query("lessons", null, "date>="+start+" and date<="+finish+";",
+                null, null, null, "date");
         Log.d("myLessons", String.valueOf(start));
         Log.d("myLessons", String.valueOf(finish));
         if (cursor.moveToFirst()) {
@@ -169,24 +170,7 @@ public class Report extends AppCompatActivity {
             Log.d("mLog", "0 rows");
         cursor.close();
         return true;
-     //в subjects будут лежать id предметов, для которых на выбранный период есть записи о посещаемости
-       /* try {
-            db = dbHelper.getWritableDatabase();
-            Cursor cursor1 = db.query("lessons", null, "date>="+start+" and date<="+finish+";", null, "subject_id", null, null);
 
-            if (cursor1.moveToFirst()) {
-                int subjectIndex = cursor1.getColumnIndex("subject_id");
-                do {
-                    subjects.add(cursor1.getString(subjectIndex));
-                } while (cursor1.moveToNext());
-            } else
-                Log.d("mLog", "0 rows");
-            cursor1.close();
-
-
-        } catch (Exception exception) {
-            exception.printStackTrace();
-        }*/
     }
 
 
@@ -423,7 +407,6 @@ public class Report extends AppCompatActivity {
         //получаем ссылку для работы с базой данных
     }
     public void createStudentsList(){
-
         db = dbHelper.getReadableDatabase();
         Cursor cursor = db.query("students", null, null, null, null, null, "name");
 
@@ -452,8 +435,6 @@ public class Report extends AppCompatActivity {
         });
     }
     public void goToCreating(){
-
-
         HSSFSheet sheet1 = null;
         ArrayList<LessonModel> lessonFilter = new ArrayList<>();
         int j = 0;

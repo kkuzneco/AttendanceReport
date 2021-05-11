@@ -113,6 +113,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public void removeMACRows(SQLiteDatabase db) {
         db.execSQL("delete from macs");
     }
+
      public void createTableLessons(SQLiteDatabase db){
          db.execSQL("drop table if exists lessons");
          db.execSQL("create table lessons ("

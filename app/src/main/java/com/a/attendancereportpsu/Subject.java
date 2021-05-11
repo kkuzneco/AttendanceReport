@@ -49,6 +49,7 @@ public class Subject extends AppCompatActivity {
         subjectAdapter = new SubjectAdapter();
         //subjectAdapter.clearItems();
         subject="";
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         saveSubj = (Button)findViewById(R.id.save_btn);
         subjectListView = (RecyclerView) findViewById(R.id.subjectRecycleView);
         Intent intent_1 = getIntent();
@@ -79,6 +80,18 @@ public class Subject extends AppCompatActivity {
 
         loadSubject();
 
+    }
+    @Override
+    public boolean onSupportNavigateUp(){
+        Intent intent = new Intent(Subject.this, LessonAdd.class);
+        Bundle bundle = new Bundle();
+            //  bundle.putString("institute", subModel.institute);
+        bundle.putString("subject_id",subject);
+        intent.putExtras(bundle);
+        setResult(RESULT_OK,intent);
+        finishActivity(1);
+        finish();
+        return true;
     }
     public void initRecyclerView(){
         Log.d("mlog", "initRecyclerView");

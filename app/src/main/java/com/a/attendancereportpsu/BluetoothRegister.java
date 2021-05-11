@@ -76,10 +76,8 @@ public class BluetoothRegister extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         dbHelper = new DatabaseHelper(this);
         db = dbHelper.getWritableDatabase();
-       // dbHelper.createTableMacs(db);
         Intent intent = getIntent();
         group_id = intent.getStringExtra("groupId");
-
         devices = new ArrayList<String>();
         devicesList = new ArrayList<>();
         setContentView(R.layout.activity_bluetooth_register);
@@ -91,17 +89,17 @@ public class BluetoothRegister extends AppCompatActivity {
         device_list = (RecyclerView) findViewById(R.id.device_list);
         tv.setVisibility(View.INVISIBLE);
         formDeviceList();
-
         ArrayAdapter<String> adapter = new ArrayAdapter(this,
                 android.R.layout.simple_expandable_list_item_1, devices);
+
         lv.setAdapter(adapter);
 
         lv.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> arg0, View arg1,
                                            final int pos, long id) {
-                android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(BluetoothRegister.this);
-                builder.setMessage("Удалить запись о регистрации?");
+                AlertDialog.Builder builder = new AlertDialog.Builder(BluetoothRegister.this);
+                builder.setMessage("Удалить зарегистрированное устройство?");
 
                 builder.setCancelable(false);
                 builder.setPositiveButton("ДА", new DialogInterface.OnClickListener() {

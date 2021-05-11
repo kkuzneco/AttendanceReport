@@ -5,14 +5,28 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".BluetoothRegister">
+
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
+        <TextView
+            android:id="@+id/textView6"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="false"
+            android:layout_marginLeft="10dp"
+            android:layout_marginTop="15dp"
+            android:layout_marginBottom="15dp"
+            android:text="Спиcок зарегистрированных устройств"
+            android:textSize="16sp" />
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/device_list"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="wrap_content"
+            android:layout_below="@id/textView6" />
 
         <ProgressBar
             android:id="@+id/progressBar2"
@@ -43,7 +57,8 @@
         <ListView
             android:id="@+id/list"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="wrap_content"
+            android:layout_below="@id/textView6" />
 
     </RelativeLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

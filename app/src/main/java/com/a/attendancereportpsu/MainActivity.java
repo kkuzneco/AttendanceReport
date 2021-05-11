@@ -2,10 +2,10 @@ package com.a.attendancereportpsu;
 
 import android.os.Bundle;
 import android.content.Intent;
-import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -19,9 +19,10 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.*;
 import com.google.firebase.firestore.CollectionReference;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QuerySnapshot;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -41,6 +42,7 @@ public class MainActivity extends BaseActivity implements
     FirebaseFirestore mFirebaseDatabase;
     FirebaseDatabase firebaseData;
     CollectionReference headmen;
+    ProgressBar pb;
 
     /*
     При создании окна
@@ -50,11 +52,11 @@ public class MainActivity extends BaseActivity implements
         super.onCreate(savedInstanceState);
         mBinding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(mBinding.getRoot());
-        setProgressBar(mBinding.progressBar);
+        pb = (ProgressBar) findViewById(R.id.progressBar);
+        pb.setVisibility(View.INVISIBLE);
         mBinding.signInButton.setOnClickListener(this);
         //получить данные из Fb
         mAuth = FirebaseAuth.getInstance();
-
         initFirebase();
     }
 
@@ -76,13 +78,34 @@ public class MainActivity extends BaseActivity implements
         if (user != null) {
             String usrId = user.getUid();
             Log.d("mLog", usrId);
-            Intent intent = new Intent(MainActivity.this, ShowLessons.class);
-            startActivityForResult(intent,1);
+            mFirebaseDatabase.collection("users").document(usrId).get()
+                    .addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
+                        @Override
+                        public void onComplete(@NonNull Task<DocumentSnapshot> task) {
+                            if (task.isSuccessful()) {
+                                DocumentSnapshot document = task.getResult();
+                                String type = (String) document.get("type");
+                                if (document.exists()) {
+                                    if (type.equals("student")) {
+                                        Intent intent = new Intent(MainActivity.this, ShowLessons.class);
+                                        startActivityForResult(intent, 1);
+                                        return;
+                                    }
+                                    else {
+                                        Intent intent = new Intent(MainActivity.this, AdminMenu.class);
+                                        startActivityForResult(intent, 1);
+                                        return;
+                                    }
+                                }
+                                    Log.d(TAG, "DocumentSnapshot data: " + document.getData());
+                                } else {
+                                    Log.d(TAG, "No such document");
+                                }
+
+                    }});
             return usrId;
-        }
-        else {
-            return "";
-        }
+    }
+        else return "";
     }
 
     @Override
@@ -114,10 +137,11 @@ public String getUID(){
     * входим в систему
     * */
     public String signIn(String email, String password, boolean valid) {
-        Log.d(TAG, "NNNNNNNNNNNNNNNN" + email);
+        pb.setVisibility(View.VISIBLE);
         if (!valid) {
-
+            pb.setVisibility(View.INVISIBLE);
             return "false";
+
         }
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
@@ -129,12 +153,14 @@ public String getUID(){
                             Log.d("EmailPassword", "signInWithEmail:success");
                             FirebaseUser user = mAuth.getCurrentUser();
                             str = updateUI(user);
+                            pb.setVisibility(View.INVISIBLE);
                             Log.d(TAG, "ID" + str);
                         } else {
                             // If sign in fails, display a message to the user.
                             Log.d("ERROR", "signInWithEmail:failure", task.getException());
                             Toast.makeText(MainActivity.this, "Authentication failed.",
                                     Toast.LENGTH_SHORT).show();
+                            pb.setVisibility(View.INVISIBLE);
                             updateUI(null);
                             str = "null";
                         }

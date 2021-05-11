@@ -2,18 +2,22 @@ package com.a.attendancereportpsu;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
+import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.DataSetObserver;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.location.LocationManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
@@ -59,7 +63,9 @@ public class ChooseDevice extends AppCompatActivity {
         if (bluetoothAdapter != null) {
             Log.d("myBluetooth", "Bluetooth OK");
         }
+        checkPermission();
         if (!bluetoothAdapter.isEnabled()) {
+            Log.d("myBluetooth", "Bluetooth not OK");
             Intent enableBT = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
             startActivityForResult(enableBT, 1);
         }
@@ -77,6 +83,7 @@ public class ChooseDevice extends AppCompatActivity {
         }
 
         boolean f = bluetoothAdapter.startDiscovery();
+        Log.d("myBluetooth", String.valueOf(f));
         IntentFilter filter = new IntentFilter();
         filter.addAction(BluetoothDevice.ACTION_FOUND);
         filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
@@ -147,7 +154,7 @@ public class ChooseDevice extends AppCompatActivity {
             Log.d("myBluetooth", "receive");
             String action = intent.getAction();
             if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-
+                Log.d("myBluetooth", "FOUND DEVICE");
                 BluetoothDevice device = intent
                         .getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
                 if (device.getBondState() != BluetoothDevice.BOND_BONDED){
@@ -159,10 +166,12 @@ public class ChooseDevice extends AppCompatActivity {
             }
             if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)) {
                 pb.setVisibility(View.VISIBLE);
+                Log.d("myBluetooth", "start receive");
                 tv.setVisibility(View.INVISIBLE);
             }
             if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
                 pb.setVisibility(View.INVISIBLE);
+                Log.d("myBluetooth", "finish receive");
                 if(devices.size()==0) tv.setVisibility(View.VISIBLE);
             }
 
@@ -170,7 +179,24 @@ public class ChooseDevice extends AppCompatActivity {
 
 
     };
+    public void checkPermission() {
+        if (Build.VERSION.SDK_INT >= 23) {
+            if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED && checkSelfPermission(android.Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
 
+            } else {
+                ActivityCompat.requestPermissions(this, new String[]{
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION,}, 1);
+            }
+        }
+    }
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode == 1 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED) {
+        } else {
+            checkPermission();
+        }
+    }
 
 
     public void formList(String name, String mac){

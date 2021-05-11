@@ -8,7 +8,9 @@
         android:orderInCategory="100"
         android:title="Создать отчет"
         app:showAsAction="never" />
-
+    <item
+        android:id="@+id/update"
+        android:title="Обновить из облака" />
     <item
         android:id="@+id/action_exit"
         android:orderInCategory="100"

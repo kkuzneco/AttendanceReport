@@ -36,20 +36,20 @@ public class Lecturer extends AppCompatActivity {
     LecturerModel lecturer;
     SQLiteDatabase db;
     LecturerAdapter lecturerAdapter;
-
+    String lecturer_id;
     Button saveLecturer;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_lecturer);
         initFirebase();
-        String lecturer_id;
+
         //адаптер списка
         dbHelper = new DatabaseHelper(this);
         db = dbHelper.getWritableDatabase();
       //  dbHelper.onUpgrade(db, db.getVersion(), db.getVersion()+1);
         lecturerAdapter = new LecturerAdapter();
-
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         //lecturerList = new ArrayList<String>();
         //кнопка сохранения
         saveLecturer = (Button)findViewById(R.id.save_btn);
@@ -62,7 +62,7 @@ public class Lecturer extends AppCompatActivity {
         initRecyclerView();
 
         //dbHelper.onUpgrade(dbHelper.getWritableDatabase(), 1, 2);
-
+        lecturer_id = intent_1.getStringExtra("lecturer_id");
         Log.d("mlog", "Окно открылось!");
         saveLecturer.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -84,7 +84,7 @@ public class Lecturer extends AppCompatActivity {
                 finish();
             }
         });
-        lecturer_id = intent_1.getStringExtra("lecturer_id");
+
        // if(lecturer_id!=null)
          //   Log.d("getId",lecturer_id);
         //ищем индекс с созданном масиве текущего выбранного преподавателя
@@ -105,7 +105,18 @@ public class Lecturer extends AppCompatActivity {
         Log.d("GROUP IN SUB",groupNumber);
         loadLecturer();
     }
-
+    @Override
+    public boolean onSupportNavigateUp(){
+        Intent intent = new Intent(Lecturer.this, LessonAdd.class);
+        Bundle bundle = new Bundle();
+        //  bundle.putString("institute", subModel.institute);
+        bundle.putString("lecturer_id",lecturer_id);
+        intent.putExtras(bundle);
+        setResult(RESULT_OK,intent);
+        finishActivity(1);
+        finish();
+        return true;
+    }
 
 
     @Override

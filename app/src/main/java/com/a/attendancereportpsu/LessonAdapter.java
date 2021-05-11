@@ -4,6 +4,7 @@ import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -45,13 +46,14 @@ public class LessonAdapter extends RecyclerView.Adapter<LessonAdapter.LessonCard
     }
 
     public static class LessonCardViewHolder extends RecyclerView.ViewHolder {
-
+        ImageButton ib;
         CardView cardView;
         int currentCardPosition;
         Context mContext;
         LessonCardViewHolder(CardView cv, Context context) {
             super(cv);
             cardView = cv;
+            ib = cv.findViewById(R.id.editLesson);
             mContext=context;
             cardView.setOnLongClickListener(new View.OnLongClickListener() {
                 @Override public boolean onLongClick(View v) {
@@ -59,6 +61,14 @@ public class LessonAdapter extends RecyclerView.Adapter<LessonAdapter.LessonCard
                         ((ShowLessons)mContext).onDeleteClick(currentCardPosition);
                     }
                     return false;
+                }
+            });
+            ib.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if(mContext instanceof ShowLessons){
+                        ((ShowLessons)mContext).onEditClick(currentCardPosition);
+                    }
                 }
             });
         }
