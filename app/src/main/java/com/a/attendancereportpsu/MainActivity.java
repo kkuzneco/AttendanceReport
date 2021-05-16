@@ -38,11 +38,10 @@ public class MainActivity extends BaseActivity implements
     public FirebaseAuth mAuth;
     public boolean validForm = true;
     DatabaseReference mDatabaseReference;
-    DatabaseReference children;
     FirebaseFirestore mFirebaseDatabase;
     FirebaseDatabase firebaseData;
-    CollectionReference headmen;
     ProgressBar pb;
+    boolean connection = false;
 
     /*
     При создании окна
@@ -55,9 +54,13 @@ public class MainActivity extends BaseActivity implements
         pb = (ProgressBar) findViewById(R.id.progressBar);
         pb.setVisibility(View.INVISIBLE);
         mBinding.signInButton.setOnClickListener(this);
-        //получить данные из Fb
+        connection = ShowLessons.hasConnection(this);
         mAuth = FirebaseAuth.getInstance();
-        initFirebase();
+        //получить данные из Fb
+       if(connection){
+           initFirebase();
+       }
+
     }
 
     @Override
@@ -67,35 +70,31 @@ public class MainActivity extends BaseActivity implements
         FirebaseUser currentUser = mAuth.getCurrentUser();
         //обновляем состояние в соответствие с полученным пользователем
         updateUI(currentUser);
-
     }
 
     /*
     Обновляет экран в соответствие с полученным текущим пользователем базы
      */
     public String updateUI(FirebaseUser user) {
-
         if (user != null) {
             String usrId = user.getUid();
             Log.d("mLog", usrId);
-            mFirebaseDatabase.collection("users").document(usrId).get()
+            mFirebaseDatabase.collection("headmen").document(usrId).get()
                     .addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
                         @Override
                         public void onComplete(@NonNull Task<DocumentSnapshot> task) {
                             if (task.isSuccessful()) {
                                 DocumentSnapshot document = task.getResult();
-                                String type = (String) document.get("type");
+                                //String type = (String) document.get("type");
                                 if (document.exists()) {
-                                    if (type.equals("student")) {
                                         Intent intent = new Intent(MainActivity.this, ShowLessons.class);
                                         startActivityForResult(intent, 1);
                                         return;
-                                    }
-                                    else {
+                                 /*   else {
                                         Intent intent = new Intent(MainActivity.this, AdminMenu.class);
                                         startActivityForResult(intent, 1);
                                         return;
-                                    }
+                                    }*/
                                 }
                                     Log.d(TAG, "DocumentSnapshot data: " + document.getData());
                                 } else {
@@ -111,14 +110,16 @@ public class MainActivity extends BaseActivity implements
     @Override
     public void onClick(View v) {
         int i = v.getId();
-        String k;
         if (i == R.id.signInButton) {
-            Log.d(TAG, "onClickFUNCTION");
+            Log.d(TAG, "sign in");
+            if(!ShowLessons.hasConnection(this)){
+                Toast.makeText(MainActivity.this, "Отсутствует соединение с интернетом",
+                        Toast.LENGTH_SHORT).show();
+                return;
+            }
             validForm = validateForm();
-            if(validForm) k = "true";
-            else  k = "false";
-            Log.d(TAG, k);
-            signIn(mBinding.fieldEmail.getText().toString(), mBinding.fieldPassword.getText().toString(), validForm);
+            if(validForm)
+                signIn(mBinding.fieldEmail.getText().toString(), mBinding.fieldPassword.getText().toString());
         }
     }
 
@@ -136,42 +137,31 @@ public String getUID(){
     /*
     * входим в систему
     * */
-    public String signIn(String email, String password, boolean valid) {
+    public String signIn(String email, String password) {
         pb.setVisibility(View.VISIBLE);
-        if (!valid) {
-            pb.setVisibility(View.INVISIBLE);
-            return "false";
-
-        }
         mAuth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
                     @Override
                     public void onComplete(@NonNull Task<AuthResult> task) {
 
                         if (task.isSuccessful()) {
-                            // Sign in success, update UI with the signed-in user's information
-                            Log.d("EmailPassword", "signInWithEmail:success");
                             FirebaseUser user = mAuth.getCurrentUser();
                             str = updateUI(user);
                             pb.setVisibility(View.INVISIBLE);
-                            Log.d(TAG, "ID" + str);
                         } else {
-                            // If sign in fails, display a message to the user.
-                            Log.d("ERROR", "signInWithEmail:failure", task.getException());
-                            Toast.makeText(MainActivity.this, "Authentication failed.",
+                            Toast.makeText(MainActivity.this, "Ошибка",
                                     Toast.LENGTH_SHORT).show();
                             pb.setVisibility(View.INVISIBLE);
                             updateUI(null);
                             str = "null";
                         }
-
                     }
                 });
         return str;
     }
 
     /*
-    * проверка правильно ли заполнена форма (УБРАТО КОММЕНТАРИИ ИЗ СТРОК ПРОВЕРКИ!!)
+    * проверка правильно ли заполнена форма
     */
     public boolean validateForm() {
         boolean valid = true;
@@ -212,8 +202,12 @@ public String getUID(){
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
          super.onActivityResult(requestCode, resultCode, data);
          signOut();
-         Toast.makeText(MainActivity.this, "Вы вышли из учетной записи",
+         if (resultCode == RESULT_OK)
+             Toast.makeText(MainActivity.this, "Вы вышли из учетной записи",
             Toast.LENGTH_SHORT).show();
+         else
+             Toast.makeText(MainActivity.this, "Произошла ошибка",
+                 Toast.LENGTH_SHORT).show();
     }
     /*
     проверка эл почны на валидность
