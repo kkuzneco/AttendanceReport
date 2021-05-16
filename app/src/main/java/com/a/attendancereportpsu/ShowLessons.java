@@ -16,6 +16,7 @@ import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.util.Log;
@@ -105,6 +106,21 @@ public class ShowLessons extends AppCompatActivity {
             Intent intent = new Intent(ShowLessons.this, MainActivity.class);
             startActivity(intent);
         }
+    }
+    public void sendReport(){
+        Intent intent = new Intent(Intent.ACTION_SEND);
+        intent.setType("text/plain");
+        intent.putExtra(Intent.EXTRA_TEXT, "messageText");
+     //   intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(outputFile)); // сюда прилетает картинка
+        Intent chosenIntent = Intent.createChooser(intent, "Заголовок в диалоговом окне");
+        startActivity(chosenIntent);
+
+    //    Intent share = new Intent(Intent.ACTION_SEND);
+        //share.setType(".xslt");
+      //  share.putExtra(Intent.EXTRA_SUBJECT, "SUBJECT TEXT 123");
+      //  share.putExtra(Intent.EXTRA_TEXT, "TEXT 123");
+       //
+      //  startActivity(Intent.createChooser(share, "SHARE RESULT")); //
     }
     public void formLessonList(ShowLessons.MyCallback myCallBack){
         dbHelper.removeLessonsRows(db);
@@ -360,6 +376,9 @@ public class ShowLessons extends AppCompatActivity {
             case R.id.action_exit://если выбрано "Выход"
                 exit();
                 return true;
+            case R.id.action_email://если выбрано "Выход"
+                sendReport();
+                return true;
             case R.id.action_report://если выбрано "Создать отчет"
                 Intent intent = new Intent(ShowLessons.this, Report.class);
                 intent.putExtra("group",groupId);
@@ -389,9 +408,10 @@ public class ShowLessons extends AppCompatActivity {
         if(requestCode ==1)
             Toast.makeText(ShowLessons.this, "Занятие создано!",
                 Toast.LENGTH_SHORT).show();
-        if(requestCode ==3)
+        if(requestCode ==3) {
             Toast.makeText(ShowLessons.this, "Изменения применены!",
                     Toast.LENGTH_SHORT).show();
+        }
 
     }
 
@@ -399,8 +419,8 @@ public class ShowLessons extends AppCompatActivity {
         //инициализируем наше приложение для Firebase согласно параметрам в google-services.json
         FirebaseApp.initializeApp(this);
         //получаем точку входа для базы данных
-        firebaseData = FirebaseDatabase.getInstance();
-        mDatabaseReference = firebaseData.getReference();
+      //  firebaseData = FirebaseDatabase.getInstance();
+    //    mDatabaseReference = firebaseData.getReference();
         mFirebaseDatabase = FirebaseFirestore.getInstance();
     }
 

@@ -14,7 +14,8 @@
             android:id="@+id/lecturerRecycleView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_above="@id/save_btn" />
+            android:layout_above="@id/save_btn"
+            android:background="@color/fui_bgGoogle" />
 
         <Button
             android:id="@+id/save_btn"

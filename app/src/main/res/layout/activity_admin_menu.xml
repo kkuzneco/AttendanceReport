@@ -6,37 +6,26 @@
     android:layout_height="match_parent"
     tools:context=".AdminMenu">
 
-    <RelativeLayout
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/textView2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_centerHorizontal="true"
-            android:text="Здравствуйте"
-            android:textSize="24sp" />
-
-        <androidx.gridlayout.widget.GridLayout
+        <FrameLayout
+            android:id="@+id/fl_content"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_below="@id/textView2"
-            app:columnCount="2"
-            app:rowCount="3">
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="@color/fui_bgGoogle" />
 
-            <ImageButton
-                android:id="@+id/reps1"
-                android:layout_width="205dp"
-                android:layout_height="178dp"
-                android:background="#00FFFFFF"
-                android:contentDescription="image"
-                android:scaleType="fitCenter"
-                app:srcCompat="@mipmap/reps"
-                tools:srcCompat="@mipmap/reps" />
-
-        </androidx.gridlayout.widget.GridLayout>
-
-    </RelativeLayout>
+        <com.google.android.material.bottomnavigation.BottomNavigationView
+            android:id="@+id/navigation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:itemBackground="@color/colorPrimary"
+            app:itemIconTint="@drawable/bottom_navigation_item_background_colors"
+            app:itemTextColor="@drawable/bottom_navigation_item_background_colors"
+            app:menu="@menu/menu_bottom_navigation" />
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

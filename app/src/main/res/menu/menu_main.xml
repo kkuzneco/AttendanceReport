@@ -9,6 +9,9 @@
         android:title="Создать отчет"
         app:showAsAction="never" />
     <item
+        android:id="@+id/action_email"
+        android:title="action_email" />
+    <item
         android:id="@+id/update"
         android:title="Обновить из облака" />
     <item

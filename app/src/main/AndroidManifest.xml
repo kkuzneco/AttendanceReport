@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.a.attendancereportpsu">
+    package="com.a.attendancereportpsu" >
 
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
@@ -11,12 +11,20 @@
 
     <application
         android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/item11"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/AppTheme">
-        <activity android:name=".AdminReport"></activity>
+        android:theme="@style/AppTheme" >
+        <activity
+            android:name=".MainAdmin"
+            android:label="@string/title_activity_main_admin" >
+        </activity>
+        <activity
+            android:name=".AdminMain"
+            android:label="@string/title_activity_admin_main" >
+        </activity>
+        <activity android:name=".AdminReport" />
         <activity android:name=".AdminMenu" />
         <activity android:name=".Report" />
         <activity android:name=".ChooseDevice" />
@@ -33,7 +41,7 @@
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name"
-            android:theme="@style/AppTheme.NoActionBar">
+            android:theme="@style/AppTheme.NoActionBar" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

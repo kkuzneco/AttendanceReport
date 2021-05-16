@@ -28,7 +28,8 @@
         <ListView
             android:id="@+id/devices"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent"
+            android:background="@drawable/back11" />
     </RelativeLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

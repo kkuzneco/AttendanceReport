@@ -17,5 +17,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Выбрать группу(-ы)" />
+
+        <Button
+            android:id="@+id/button4"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/button3"
+            android:text="дата начала" />
     </RelativeLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

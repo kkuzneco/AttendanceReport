@@ -8,17 +8,22 @@ import androidx.core.app.ActivityCompat;
 import android.Manifest;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
+import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.StrictMode;
 import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckedTextView;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -78,8 +83,10 @@ public class Report extends AppCompatActivity {
     DatabaseHelper dbHelper;
     ArrayList<String> subjects;
     ArrayList<HSSFSheet> sheet;
+    CheckedTextView textView;
     long start;
     long finish;
+    String filepath;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,6 +94,19 @@ public class Report extends AppCompatActivity {
         setContentView(R.layout.activity_report);
         dateAndTime = Calendar.getInstance();
         subjects = new ArrayList<>();
+        textView = findViewById(R.id.checked_tv);
+        textView.setCheckMarkDrawable(android.R.drawable.checkbox_off_background);
+        textView.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View view) {
+                if (textView.isChecked()) {
+                    textView.setChecked(false);
+                    textView.setCheckMarkDrawable(android.R.drawable.checkbox_off_background);
+                } else {
+                    textView.setChecked(true);
+                    textView.setCheckMarkDrawable(android.R.drawable.checkbox_on_background);
+                }
+            }
+        });
         dbHelper = new DatabaseHelper(this);
         //dbHelper.createTableAttendance(dbHelper.getWritableDatabase());
         students = new ArrayList<>();
@@ -138,7 +158,11 @@ public class Report extends AppCompatActivity {
         blockCount = 2;
 
     }
-
+    private void clearData(){
+        lessons.clear();
+        lessonsIds.clear();
+        subjects.clear();
+    }
     private boolean createLessonsWithDateFilter() {
         db = dbHelper.getWritableDatabase();
         Cursor cursor = db.query("lessons", null, "date>="+start+" and date<="+finish+";",
@@ -158,7 +182,7 @@ public class Report extends AppCompatActivity {
                         ", subject = " + cursor.getString(subjectIndex) +
                         ", time = " + cursor.getString(timeIndex));
                 lesson = new LessonModel(cursor.getString(idIndex),groupNumber, cursor.getString(subjectIndex), cursor.getString(lecturerIndex), cursor.getLong(dateIndex), cursor.getString(timeIndex));
-                lesson = new LessonModel(cursor.getString(idIndex),groupNumber, cursor.getString(subjectIndex), cursor.getString(lecturerIndex), cursor.getLong(dateIndex), cursor.getString(timeIndex));
+               // lesson = new LessonModel(cursor.getString(idIndex),groupNumber, cursor.getString(subjectIndex), cursor.getString(lecturerIndex), cursor.getLong(dateIndex), cursor.getString(timeIndex));
                 lessons.add(lesson);
                 int subIndex = cursor.getColumnIndex("subject_id");
                 if(!subjects.contains(cursor.getString(subIndex)))
@@ -212,22 +236,12 @@ public class Report extends AppCompatActivity {
 
     DatePickerDialog.OnDateSetListener d = new DatePickerDialog.OnDateSetListener() {
         public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
-            //dateAndTime.set(Calendar.YEAR, );
-        //    dateAndTime.set(Calendar.MONTH, );
-          //  dateAndTime.set(Calendar.DAY_OF_MONTH, );
-         //   dateAndTime.set(Calendar.HOUR_OF_DAY, 0);
             dateAndTime.set(year,monthOfYear,dayOfMonth,0,0,0);
-           // dateAndTime.set(Calendar.MINUTE, 0);
-           // dateAndTime.set(Calendar.SECOND, 1);
             setInitialDateStart();
         }
     };
     DatePickerDialog.OnDateSetListener d1 = new DatePickerDialog.OnDateSetListener() {
         public void onDateSet(DatePicker view, int year, int monthOfYear, int dayOfMonth) {
-
-          //  dateAndTime.set(Calendar.YEAR, year);
-          //  dateAndTime.set(Calendar.MONTH, monthOfYear);
-           // dateAndTime.set(Calendar.DAY_OF_MONTH, dayOfMonth);
             dateAndTime.set(year,monthOfYear,dayOfMonth,23,59,59);
             setInitialDateFinish();
         }
@@ -381,8 +395,14 @@ public class Report extends AppCompatActivity {
     }
 
         public void startCreateReport(View v){
+        clearData();
            boolean creating =  createLessonsWithDateFilter();
-           if(creating) createReport();
+           if(creating){
+               if(start<finish)
+                   createReport();
+               else
+                   Toast.makeText(this, "Дата начала отчета больше, чем дата окончания", Toast.LENGTH_SHORT).show();
+           }
         }
 
         public void createReport(){
@@ -547,22 +567,57 @@ public class Report extends AppCompatActivity {
         }
 
             try  {
-            FileOutputStream out = new FileOutputStream(new File(Environment.getExternalStorageDirectory().getAbsolutePath(), String.format("Study reports/Report" +groupNumber+"_"+ DateUtils.formatDateTime(this,
-                    start,
-                    DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_SHOW_YEAR)+"-"+DateUtils.formatDateTime(this,
-                    finish,
-                    DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_SHOW_YEAR)+".xls")));
+                Context mContext =  this;
+                filepath=mContext.getExternalFilesDir(null).getAbsolutePath()+"/"+String.format("Study reports/Report" +groupNumber+"_"+ DateUtils.formatDateTime(this,
+                        start,
+                        DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_SHOW_YEAR)+"-"+DateUtils.formatDateTime(this,
+                        finish,
+                        DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_SHOW_YEAR)+".xls");
+                Log.d("myLessons", filepath);
+               FileOutputStream out = new FileOutputStream(new File(mContext.getExternalFilesDir(null).getAbsolutePath(), String.format("Study reports/Report" +groupNumber+"_"+ DateUtils.formatDateTime(this,
+                        start,
+                        DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_SHOW_YEAR)+"-"+DateUtils.formatDateTime(this,
+                        finish,
+                        DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_SHOW_YEAR)+".xls")));
             workbook.write(out);
             out.close();
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        System.out.println("Excel файл успешно создан!");
+                   System.out.println("Excel файл успешно создан!");
+                   if (textView.isChecked()){
+                       try {
+                           StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
+                           StrictMode.setVmPolicy(builder.build());
+                           Intent intent = new Intent(Intent.ACTION_SEND);
+                           intent.setType("application/excel");
+                           File fl = new File(filepath);
+                           Uri path = Uri.fromFile(fl);
+                           intent.putExtra(android.content.Intent.EXTRA_SUBJECT, "Посещаемость "+ groupNumber);
+                           intent.putExtra(Intent.EXTRA_TEXT, "Отчет по посещаемости группы "+ groupNumber+" c "
+                                   + DateUtils.formatDateTime(this, start, DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_SHOW_YEAR)+" по "+DateUtils.formatDateTime(this,
+                                   finish,
+                                   DateUtils.FORMAT_NUMERIC_DATE | DateUtils.FORMAT_SHOW_YEAR));
+                         //  intent.putExtra(Intent.EXTRA_STREAM, Uri.parse(filepath)); // сюда прилетает картинка
 
+                           String to[] = { "kuznetcova.ks@yandex.ru"};
+                           intent.putExtra(Intent.EXTRA_EMAIL, to);
+
+                           intent.putExtra(Intent.EXTRA_STREAM, path);
+
+                           Intent chosenIntent = Intent.createChooser(intent, "Заголовок в диалоговом окне");
+                           startActivity(chosenIntent);
+
+                       } catch (Exception e) {
+                           e.printStackTrace();
+                       }
+
+                   }
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
     }
         private void makeFolder(){
-        File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath(),"Study reports");
+            Context mContext = this;
+            File file = new File(mContext.getExternalFilesDir(null).getAbsolutePath(),"Study reports");
 
         if (!file.exists()){
             Boolean ff = file.mkdir();
